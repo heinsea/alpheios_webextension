@@ -39,6 +39,7 @@ const webpack = {
 
   development: {
     mode: 'development',
+    devtool: 'source-map',
     output: { filename: '[name].js' },
     resolve: {
       alias: {

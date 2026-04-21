@@ -1,5 +1,20 @@
 # Alpheios Webextension Developer Notes
 
+## Modernization Context
+
+The primary historical blocker for this repository is
+[issue #324](https://github.com/alpheios-project/webextension/issues/324),
+which tracks migration to Manifest V3 for Chrome and Firefox.
+
+The codebase currently uses multiple Manifest V2-only APIs and patterns:
+- `browser_action`
+- `tabs.executeScript`
+- `tabs.insertCSS`
+- background page script model
+
+Modernization work should prioritize adapter-based refactors so behavior remains
+stable while API usage is migrated incrementally.
+
 ## Authentication
 The Webextension uses Auth0 for Authentication. In order for Authentication to work,
 the Auth0 Client ID secret must be present in the environment.

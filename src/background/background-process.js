@@ -1,5 +1,4 @@
-/* global browser, Auth0Chrome, auth0Env */
-import { enUS, enGB, Locales, L10n, Tab, TabScript, AuthData } from 'alpheios-components'
+import { Tab, TabScript, AuthData } from './background-models.js'
 import Message from '../lib/messaging/message/message.js'
 import MessagingService from '../lib/messaging/service.js'
 import StateRequest from '../lib/messaging/request/state-request.js'
@@ -12,6 +11,7 @@ import EndpointsResponse from '../lib/messaging/response/endpoints-response.js'
 import AuthError from '../lib/auth/errors/auth-error.js'
 import ContextMenuItem from './context-menu-item.js'
 import ContentMenuSeparator from './context-menu-separator.js'
+import auth0Env from '../env/env-webext-config.js'
 
 // Use a logger that outputs timestamps (but loses line numbers)
 // import Logger from '../lib/logger'
@@ -26,6 +26,7 @@ export default class BackgroundProcess {
     this.tab = undefined // A tab that is currently active in a browser window
 
     this.messagingService = new MessagingService()
+    this.browserAction = browser.action || browser.browserAction
 
     this.browserIcons = {
       active: {
@@ -46,6 +47,16 @@ export default class BackgroundProcess {
     this.authData = new AuthData()
 
     this.authResult = null // A result of Auth0 authentication
+    this.authClientClass = null
+  }
+
+  async getAuthClientClass () {
+    if (this.authClientClass) {
+      return this.authClientClass
+    }
+    const authModule = await import('auth0-chrome')
+    this.authClientClass = authModule.default || authModule
+    return this.authClientClass
   }
 
   initialize () {
@@ -59,6 +70,7 @@ export default class BackgroundProcess {
     this.messagingService.addHandler(Message.types.ENDPOINTS_REQUEST, this.endpointsRequestHandler, this)
     this.messagingService.addHandler(Message.types.USER_DATA_REQUEST, this.userDataRequestHandler, this)
     browser.runtime.onMessage.addListener(this.messagingService.listener.bind(this.messagingService))
+    browser.runtime.onMessage.addListener(this.popupMessageListener.bind(this))
     browser.tabs.onActivated.addListener(this.tabActivationListener.bind(this))
     browser.tabs.onDetached.addListener(this.tabDetachedListener.bind(this))
     browser.tabs.onAttached.addListener(this.tabAttachedListener.bind(this))
@@ -78,13 +90,86 @@ export default class BackgroundProcess {
     this.menuItems.activate.enable() // This one will be enabled by default
 
     browser.contextMenus.onClicked.addListener(this.menuListener.bind(this))
-    browser.browserAction.onClicked.addListener(this.browserActionListener.bind(this))
+    this.browserAction.onClicked.addListener(this.browserActionListener.bind(this))
+  }
+
+  async popupMessageListener (message) {
+    if (!message || message.source !== 'alpheios-popup') {
+      return false
+    }
+
+    if (message.command === 'get-status') {
+      return this.getPopupStatus()
+    }
+
+    const activeTab = await this.getActiveTabObject()
+    if (!activeTab) {
+      return { ok: false, error: 'No active tab found' }
+    }
+
+    if (message.command === 'toggle') {
+      const trackedTab = this.tabs.get(activeTab.uniqueId)
+      if (trackedTab && trackedTab.isActive()) {
+        await this.deactivateContent(activeTab)
+      } else {
+        await this.activateContent(activeTab)
+      }
+      return this.getPopupStatus()
+    }
+
+    if (message.command === 'open-info') {
+      await this.openInfoTab(activeTab)
+      return this.getPopupStatus()
+    }
+
+    return { ok: false, error: `Unsupported popup command: ${message.command}` }
+  }
+
+  async getPopupStatus () {
+    const browserTab = await this.getActiveBrowserTab()
+    if (!browserTab || typeof browserTab.id !== 'number') {
+      return { ok: false, error: 'No active browser tab found' }
+    }
+
+    const tabObj = new Tab(browserTab.id, browserTab.windowId)
+    const trackedTab = this.tabs.get(tabObj.uniqueId)
+    const isActive = Boolean(trackedTab && trackedTab.isActive() && !trackedTab.isEmbedLibActive() && !trackedTab.isDisabled())
+    const isEmbedded = Boolean(trackedTab && trackedTab.isEmbedLibActive())
+    const isDisabled = Boolean(trackedTab && trackedTab.isDisabled())
+    const panelOpen = Boolean(trackedTab && trackedTab.isPanelOpen())
+    const supportedUrl = BackgroundProcess.isSupportedTabUrl(browserTab.url)
+
+    return {
+      ok: true,
+      status: {
+        isActive,
+        isEmbedded,
+        isDisabled,
+        panelOpen,
+        supportedUrl,
+        title: browserTab.title || '',
+        tabId: browserTab.id
+      }
+    }
+  }
+
+  async getActiveBrowserTab () {
+    const tabs = await browser.tabs.query({ active: true, currentWindow: true })
+    return tabs && tabs.length > 0 ? tabs[0] : null
+  }
+
+  async getActiveTabObject () {
+    const activeBrowserTab = await this.getActiveBrowserTab()
+    if (!activeBrowserTab || typeof activeBrowserTab.id !== 'number') {
+      return null
+    }
+    return new Tab(activeBrowserTab.id, activeBrowserTab.windowId)
   }
 
   updateIcon (active, tabId) {
     let params = { path: active ? this.browserIcons.active : this.browserIcons.nonactive } // eslint-disable-line prefer-const
     if (tabId) { params.tabId = tabId }
-    browser.browserAction.setIcon(params)
+    this.browserAction.setIcon(params)
   }
 
   setIconState (tab) {
@@ -95,13 +180,13 @@ export default class BackgroundProcess {
   setBadgeState (tab) {
     const badgeState = tab ? tab.isActive() && !tab.isEmbedLibActive() : false
     if (badgeState) {
-      browser.browserAction.setBadgeText({ text: 'On' })
-      browser.browserAction.setBadgeBackgroundColor({ color: [252, 20, 20, 255] })
-      if (browser.browserAction.setBadgeTextColor) {
-        browser.browserAction.setBadgeTextColor({ color: '#fff' })
+      this.browserAction.setBadgeText({ text: 'On' })
+      this.browserAction.setBadgeBackgroundColor({ color: [252, 20, 20, 255] })
+      if (this.browserAction.setBadgeTextColor) {
+        this.browserAction.setBadgeTextColor({ color: '#fff' })
       }
     } else {
-      browser.browserAction.setBadgeText({ text: '' })
+      this.browserAction.setBadgeText({ text: '' })
     }
   }
 
@@ -117,7 +202,7 @@ export default class BackgroundProcess {
     if (details.previousVersion) {
       browser.tabs.query({}).then((tabs) => {
         tabs.forEach((t) => {
-          BackgroundProcess.executeScript(t.id, { code: "document.body.dispatchEvent(new Event('Alpheios_Reload'))" })
+          BackgroundProcess.dispatchEvent(t.id, 'Alpheios_Reload')
         })
       })
     }
@@ -195,6 +280,22 @@ export default class BackgroundProcess {
 
   static async executeScript (tabId, details = {}) {
     try {
+      if (browser.scripting) {
+        if (details.file) {
+          await browser.scripting.executeScript({
+            target: { tabId },
+            files: [details.file]
+          })
+          return
+        }
+        if (details.code) {
+          const matchedEvent = details.code.match(/new Event\('([^']+)'\)/)
+          if (matchedEvent && matchedEvent[1]) {
+            await BackgroundProcess.dispatchEvent(tabId, matchedEvent[1])
+          }
+        }
+        return
+      }
       await browser.tabs.executeScript(tabId, details)
     } catch (e) {
       /*
@@ -207,6 +308,24 @@ export default class BackgroundProcess {
       So we will do nothing about it other than quietly catching an error here.
        */
     }
+  }
+
+  static async dispatchEvent (tabId, eventName) {
+    if (browser.scripting) {
+      await browser.scripting.executeScript({
+        target: { tabId },
+        func: (name) => {
+          if (document.body) {
+            document.body.dispatchEvent(new Event(name))
+          }
+        },
+        args: [eventName]
+      })
+      return
+    }
+    await browser.tabs.executeScript(tabId, {
+      code: `document.body.dispatchEvent(new Event('${eventName}'))`
+    })
   }
 
   loadPolyfill (tabId) {
@@ -226,6 +345,12 @@ export default class BackgroundProcess {
   }
 
   loadContentCSS (tabId, fileName) {
+    if (browser.scripting) {
+      return browser.scripting.insertCSS({
+        target: { tabId },
+        files: [fileName]
+      })
+    }
     return browser.tabs.insertCSS(tabId, {
       file: fileName
     })
@@ -358,7 +483,7 @@ export default class BackgroundProcess {
    * @param {RequestMessage} request - A request object received from a content script.
    * @param {Object} sender - A sender object
    */
-  loginRequestHandler (request, sender) {
+  async loginRequestHandler (request, sender) {
     // scope
     //  - openid if you want an id_token returned
     //  - offline_access if you want a refresh_token returned
@@ -383,7 +508,8 @@ export default class BackgroundProcess {
       this.messagingService.sendResponseToTab(LoginResponse.Success(request, this.authData.serializable()), sender.tab.id)
         .catch(error => console.error(`Unable to send a response to a login request: ${error.message}`))
     } else {
-      new Auth0Chrome(auth0Env.AUTH0_DOMAIN, auth0Env.AUTH0_CLIENT_ID)
+      const Auth0ChromeClass = await this.getAuthClientClass()
+      new Auth0ChromeClass(auth0Env.AUTH0_DOMAIN, auth0Env.AUTH0_CLIENT_ID)
         .authenticate(options)
         .then(authResult => {
           /*
@@ -408,7 +534,7 @@ export default class BackgroundProcess {
 
   sessionRequestHandler (request, sender) {
     if (this.authResult && !this.authResult.is_test_user) {
-      window.fetch(`https://${auth0Env.AUTH0_DOMAIN}/userinfo`, {
+      fetch(`https://${auth0Env.AUTH0_DOMAIN}/userinfo`, {
         headers: {
           Authorization: `Bearer ${this.authResult.access_token}`
         }
@@ -446,7 +572,7 @@ export default class BackgroundProcess {
       this.messagingService.sendResponseToTab(UserProfileResponse.Success(request, this.authData.serializable()), sender.tab.id)
         .catch(error => console.error(`Unable to send a response to a user profile request: ${error.message}`))
     } else {
-      window.fetch(`https://${auth0Env.AUTH0_DOMAIN}/userinfo`, {
+      fetch(`https://${auth0Env.AUTH0_DOMAIN}/userinfo`, {
         headers: {
           Authorization: `Bearer ${this.authResult.access_token}`
         }
@@ -513,8 +639,9 @@ export default class BackgroundProcess {
    * @param {RequestMessage} request - A request object received from a content script.
    * @param {Object} sender - A sender object
    */
-  logoutRequestHandler (request, sender) {
-    new Auth0Chrome(auth0Env.AUTH0_DOMAIN, auth0Env.AUTH0_CLIENT_ID)
+  async logoutRequestHandler (request, sender) {
+    const Auth0ChromeClass = await this.getAuthClientClass()
+    new Auth0ChromeClass(auth0Env.AUTH0_DOMAIN, auth0Env.AUTH0_CLIENT_ID)
       .logout()
       .then(() => {
         this.authResult = null
@@ -644,11 +771,11 @@ export default class BackgroundProcess {
   }
 
   checkEmbeddedContent (tabId) {
-    BackgroundProcess.executeScript(tabId, { code: "document.body.dispatchEvent(new Event('Alpheios_Embedded_Check'))" })
+    BackgroundProcess.dispatchEvent(tabId, 'Alpheios_Embedded_Check')
   }
 
   notifyPageLoad (tabId) {
-    BackgroundProcess.executeScript(tabId, { code: "document.body.dispatchEvent(new Event('Alpheios_Page_Load'))" })
+    BackgroundProcess.dispatchEvent(tabId, 'Alpheios_Page_Load')
   }
 
   /**
@@ -656,7 +783,7 @@ export default class BackgroundProcess {
    * @param {String} tabId  the id of the tab to notify
    */
   notifyPageActive (tabId) {
-    BackgroundProcess.executeScript(tabId, { code: "document.body.dispatchEvent(new Event('Alpheios_Active'))" })
+    BackgroundProcess.dispatchEvent(tabId, 'Alpheios_Active')
   }
 
   /**
@@ -664,7 +791,7 @@ export default class BackgroundProcess {
    * @param {String} tabId  the id of the tab to notify
    */
   notifyPageInactive (tabId) {
-    BackgroundProcess.executeScript(tabId, { code: "document.body.dispatchEvent(new Event('Alpheios_Inactive'))" })
+    BackgroundProcess.dispatchEvent(tabId, 'Alpheios_Inactive')
   }
 
   /**
@@ -673,6 +800,10 @@ export default class BackgroundProcess {
    */
   updateAvailableListener (details) {
     console.log(`Update pending to version ${details.version} pending.`)
+  }
+
+  static isSupportedTabUrl (url = '') {
+    return !/^(chrome|edge|about|moz-extension|chrome-extension|view-source):/i.test(url)
   }
 
   tabRemovalListener (tabID, removeInfo) {
@@ -719,11 +850,11 @@ export default class BackgroundProcess {
   updateBrowserActionForTab (tab) {
     if (tab && tab.hasOwnProperty('status')) { // eslint-disable-line no-prototype-builtins
       if (tab.isEmbedLibActive() || tab.isDisabled()) {
-        browser.browserAction.setTitle({ title: BackgroundProcess.defaults.disabledBrowserActionTitle, tabId: tab.tabObj.tabId })
+        this.browserAction.setTitle({ title: BackgroundProcess.defaults.disabledBrowserActionTitle, tabId: tab.tabObj.tabId })
       } else if (tab.isActive()) {
-        browser.browserAction.setTitle({ title: BackgroundProcess.defaults.deactivateBrowserActionTitle, tabId: tab.tabObj.tabId })
+        this.browserAction.setTitle({ title: BackgroundProcess.defaults.deactivateBrowserActionTitle, tabId: tab.tabObj.tabId })
       } else if (tab.isDeactivated()) {
-        browser.browserAction.setTitle({ title: BackgroundProcess.defaults.activateBrowserActionTitle, tabId: tab.tabObj.tabId })
+        this.browserAction.setTitle({ title: BackgroundProcess.defaults.activateBrowserActionTitle, tabId: tab.tabObj.tabId })
       }
     }
   }
@@ -777,28 +908,23 @@ export default class BackgroundProcess {
   }
 }
 
-BackgroundProcess.l10n = new L10n()
-  .addMessages(enUS, Locales.en_US)
-  .addMessages(enGB, Locales.en_GB)
-  .setLocale(Locales.en_US)
-
 BackgroundProcess.defaults = {
-  activateBrowserActionTitle: BackgroundProcess.l10n.getMsg('LABEL_BROWSERACTION_ACTIVATE'),
-  deactivateBrowserActionTitle: BackgroundProcess.l10n.getMsg('LABEL_BROWSERACTION_DEACTIVATE'),
-  disabledBrowserActionTitle: BackgroundProcess.l10n.getMsg('LABEL_BROWSERACTION_DISABLED'),
+  activateBrowserActionTitle: 'Activate Alpheios',
+  deactivateBrowserActionTitle: 'Deactivate Alpheios',
+  disabledBrowserActionTitle: 'Alpheios is disabled on this page',
   activateMenuItemId: 'activate-alpheios-content',
-  activateMenuItemText: BackgroundProcess.l10n.getMsg('LABEL_CTXTMENU_ACTIVATE'),
+  activateMenuItemText: 'Activate Alpheios',
   deactivateMenuItemId: 'deactivate-alpheios-content',
-  deactivateMenuItemText: BackgroundProcess.l10n.getMsg('LABEL_CTXTMENU_DEACTIVATE'),
+  deactivateMenuItemText: 'Deactivate Alpheios',
   disabledMenuItemId: 'disabled-alpheios-content',
-  disabledMenuItemText: BackgroundProcess.l10n.getMsg('LABEL_CTXTMENU_DISABLED'),
+  disabledMenuItemText: 'Alpheios is disabled on this page',
   openPanelMenuItemId: 'open-alpheios-panel',
-  openPanelMenuItemText: BackgroundProcess.l10n.getMsg('LABEL_CTXTMENU_OPENPANEL'),
+  openPanelMenuItemText: 'Open Alpheios Panel',
   infoMenuItemId: 'show-alpheios-panel-info',
-  infoMenuItemText: BackgroundProcess.l10n.getMsg('LABEL_CTXTMENU_INFO'),
+  infoMenuItemText: 'Open Info Panel',
   separatorOneId: 'separator-one',
   sendExperiencesMenuItemId: 'send-experiences',
-  sendExperiencesMenuItemText: BackgroundProcess.l10n.getMsg('LABEL_CTXTMENU_SENDEXP'),
+  sendExperiencesMenuItemText: 'Send experiences',
   contentCSSFileNames: ['style/style-components.css'],
   compatibilityScriptFileName: 'compatibility-fixes.js',
   contentScriptFileName: 'content.js',

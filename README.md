@@ -12,6 +12,52 @@ and [App Extension API](https://developer.apple.com/documentation/safariservices
 
 See also [DEVELOPMENT.md](DEVELOPMENT.md).
 
+## Project Revival Status
+
+This extension has a long-lived blocker tracked in
+[issue #324](https://github.com/alpheios-project/webextension/issues/324):
+`upgrade to Manifest V3 (Chrome and FF)` (opened on October 26, 2021, currently open).
+
+Current code is still based on Manifest V2 APIs (for example `browser_action` and
+`tabs.executeScript`), which is the main reason maintenance became difficult.
+
+To restart active support, the project is being modernized in phases:
+
+1. Restore maintainability and simplify local development.
+2. Modernize extension shell UI (popup and control surface).
+3. Migrate runtime architecture toward Manifest V3-compatible APIs.
+4. Keep Firefox support aligned while maintaining Safari integration.
+
+The new popup control UI is now included and provides:
+- Active tab status visibility
+- One-click activate/deactivate
+- Quick open of the info panel
+
+## Quick Local Preview
+
+Run from repository root:
+
+```bash
+npm run install:dev-safe
+npm run update-dist && npm run update-styles
+npm run set-auth0
+npm run build-dev
+```
+
+Notes for this legacy codebase:
+- You may still see many `deprecated` warnings during install. This is expected
+  until dependency modernization is completed in phases.
+- `install:dev-safe` uses `--legacy-peer-deps --ignore-scripts` to avoid known
+  transitive native-module failures on newer Node versions.
+
+Then load `dist` as an unpacked extension:
+- Chrome: `chrome://extensions` -> Developer mode -> Load unpacked -> select `dist`
+- Firefox: `about:debugging#/runtime/this-firefox` -> Load Temporary Add-on -> select `dist/manifest.json`
+
+After loading, click the extension toolbar icon to see the new popup UI and test:
+- Activate/Deactivate toggle
+- Open Info Panel action (enabled when active)
+
 ## Development and Reviewer Build Instructions
 
 See [BUILD-FF-CHROME.md](BUILD-FF-CHROME.md) and [BUILD-SAFARI.md](BUILD-SAFARI.md).
