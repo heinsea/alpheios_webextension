@@ -8,6 +8,8 @@
     "build": "npm run build-prod && node --openssl-legacy-provider --experimental-modules ./node_modules/alpheios-node-build/dist/build.mjs -m all -M all -p vue -c config-content-safari.mjs",
     "build-prod": "npm run update-dist && npm run update-styles && npm run lint && npm run prod",
     "build-dev": "npm run update-dist && npm run update-styles && npm run dev",
+    "verify:p0": "node ./scripts/verify_p0.mjs",
+    "verify:worker-safe": "node ./scripts/verify_worker_safe.mjs",
     "build-safari": "npm run update-dist && npm run update-styles && npm run lint && node --openssl-legacy-provider --experimental-modules ./node_modules/alpheios-node-build/dist/build.mjs -m all -M all -p vue -c config-content-safari.mjs && npm run update-styles",
     "build-safari-dev": "npm run update-dist && npm run update-styles && node --openssl-legacy-provider --experimental-modules ./node_modules/alpheios-node-build/dist/build.mjs -m all -M development -p vue -c config-content-safari.mjs && npm run update-styles",
     "install:dev-safe": "npm install --legacy-peer-deps --ignore-scripts",
