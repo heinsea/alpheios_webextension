@@ -30,6 +30,7 @@ can find the right page without scanning the full list.
 |---|---|
 | [`migration/MIGRATION-CHECKLIST.md`](migration/MIGRATION-CHECKLIST.md) | P0/P1/P2/P3 迁移清单与逐项备注 |
 | [`migration/PENDING-DECISIONS.md`](migration/PENDING-DECISIONS.md) | 跨浏览器策略 / 工具链 / MV2 兜底三项决策矩阵（2026-05-03 已决议 A/A/A）|
+| [`migration/DEPENDENCY-NOTES.md`](migration/DEPENDENCY-NOTES.md) | 依赖与告警基线（2026-05-04 P2 收尾快照：移除清单、`npm audit` 严重度统计、不可避免告警、后续 audit-fix PR 的处理建议）|
 
 ## archive/ — 历史与参考（不再维护）
 

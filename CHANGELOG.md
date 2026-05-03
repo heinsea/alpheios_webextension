@@ -68,6 +68,13 @@ Chrome / Firefox / Safari distribution paths working.
   packaging, build toolchain, and MV2 fallback retention. Decisions taken
   on 2026-05-03: A / A / A (single MV3 manifest, keep Webpack, keep all
   defensive fallbacks).
+- `doc/migration/DEPENDENCY-NOTES.md` — dependency / warning baseline captured
+  on 2026-05-04 as P2 wrap-up. Records what was removed in this round, the
+  full `npm audit` severity breakdown (192 total: 22 critical / 72 high /
+  88 moderate / 10 low; 28 of those at `package.json` direct level), the
+  unavoidable deprecation warnings (e.g. transitive `uuid@3.4.0`), and a
+  recommended ordering for the follow-up audit-fix PR. Cross-references
+  `MIGRATION-CHECKLIST.md` P2 and `PENDING-DECISIONS.md`.
 
 ### Fixed
 - **Context menu duplicate-id error**: In MV3, the background service worker
@@ -99,6 +106,13 @@ Chrome / Firefox / Safari distribution paths working.
 - Cross-browser strategy is **single MV3 manifest** for both Chrome Web
   Store and Mozilla AMO — one `dist.zip` is shipped to both. Safari
   continues to be built from `src/safari-app-extension/` separately.
+- **Lint toolchain (P2 wrap-up, 2026-05-04)**: `babel-eslint` →
+  `@babel/eslint-parser ^7.12.0` (the former is now upstream-deprecated).
+  `eslintConfig.parserOptions.parser` and `requireConfigFile: false`
+  updated accordingly. `eslintConfig.env.webextensions: true` added — the
+  removed `eslint-plugin-standard` was implicitly providing the
+  `browser` global; without an explicit env declaration, every `browser.*`
+  call in the background script triggered `'browser' is not defined`.
 - Documentation refreshed:
   - `README.md` — "Project Revival Status" rewritten to reflect that the
     MV3 shell migration has landed and to list remaining items
@@ -120,6 +134,30 @@ Chrome / Firefox / Safari distribution paths working.
 - Two informational `console.log` lines from `src/background/background.js`
   that produced startup noise in service-worker DevTools without conveying
   actionable information. Error-path `console.warn` is preserved.
+- **Dead dependencies (P2 wrap-up, 2026-05-04)** — verified-removed from
+  `package.json` after `npm install` + `npm run build-dev` + the full verify
+  chain stayed green:
+  - `auth0-chrome` (runtime dep). Replaced by `src/lib/auth/auth0-sw-client.js`
+    in P1; the `auth0-code-update` npm script and the matching segment of
+    the `update-dist` chain are also removed. `dist/support/auth0/` is no
+    longer produced.
+  - `path` ^0.12.7 (devDep). A userland package that shadowed Node's built-in
+    `path`; clearly an accidental install.
+  - `coveralls` ^3.1.0 (devDep). The QA-build GitHub Actions workflow does
+    not run tests and never invoked it; deprecated upstream.
+  - `friendly-errors-webpack-plugin` ^1.7.0 (devDep). Zero references in this
+    repo and not pulled in by `alpheios-node-build`.
+  - `babel-eslint` ^10.1.0 (devDep). Upstream-deprecated; replaced by
+    `@babel/eslint-parser` (see Changed).
+  - `eslint-plugin-standard` ^4.0.2 (devDep). Upstream-deprecated; its rules
+    were merged into `eslint-config-standard`.
+
+  See `doc/migration/DEPENDENCY-NOTES.md` for the full removal table, the
+  short-lived regression where `webpack-cleanup-plugin` / `vue-svg-loader` /
+  `imagemin*` were removed and immediately restored once `build-dev` revealed
+  they are peer dependencies of `alpheios-node-build`'s presets, and the
+  remaining `npm audit` baseline (192 vulnerabilities — left for a separate
+  audit-fix PR per the user's scope decision for this round).
 
 ### Verified
 - **P1 authentication** — both scenarios verified end-to-end in Chrome

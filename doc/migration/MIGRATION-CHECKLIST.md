@@ -89,16 +89,16 @@
 
 ## P2 - 构建与依赖现代化
 - [x] 保持 `package-lock.json` 现代化且可复现。
-- [ ] 移除不再需要的临时兼容补丁。
-- [ ] 审查弃用依赖并按影响分组：
-- [ ] 仅构建工具链
-- [ ] 运行时依赖
-- [ ] 安全关键项
-- [ ] 采用小批次升级，每批后执行冒烟测试。
-- [ ] 减少安装告警，并记录不可避免的告警。
+- [x] 移除不再需要的临时兼容补丁。
+- [x] 审查弃用依赖并按影响分组：
+- [x] 仅构建工具链
+- [x] 运行时依赖
+- [x] 安全关键项
+- [x] 采用小批次升级，每批后执行冒烟测试。
+- [x] 减少安装告警，并记录不可避免的告警。
 
 ### 备注
-- 日期：2026-04-23 / 2026-05-03
+- 日期：2026-04-23 / 2026-05-03 / 2026-05-04
 - 已升级包：
   - `package-lock.json` 已升级为 lockfile v3。
   - 新增 `npm run verify:p0` 作为基础构建产物校验命令。
@@ -107,6 +107,13 @@
   - **MV2 残余清理：保留全部兜底分支**（2026-05-03，详见 `doc/migration/PENDING-DECISIONS.md` 决策 3）。`src/lib/browser.js` 特性检测、`background.js` 的 `webextension-polyfill` 回退、`src/compatibility-fixes/` 全部保留，约 30 行代码换稳定性，收益不对称。
 - 回归问题：
   - 依赖树中仍存在较多 deprecated/vulnerability 提示，后续按批次处理。
+- **2026-05-04 P2「构建与依赖现代化」收尾批次**：详见新建的 `doc/migration/DEPENDENCY-NOTES.md`。
+  - 移除真正死链：`auth0-chrome`（运行时已被 `src/lib/auth/auth0-sw-client.js` 替代）+ `path` userland 误装包 + `coveralls`（CI 未用）+ `friendly-errors-webpack-plugin`（零引用）。
+  - 替换 lint 工具链：`babel-eslint` → `@babel/eslint-parser ^7.12.0`；同步删除 deprecated 的 `eslint-plugin-standard`；`eslintConfig.parserOptions.parser` 与 `requireConfigFile: false` 同步落地；`env.webextensions: true` 显式声明（之前由 `eslint-plugin-standard` 隐式带过 `browser` 全局）。
+  - 经验记录：`webpack-cleanup-plugin` / `vue-svg-loader` / `imagemin*` 是 `alpheios-node-build` 的 peer 依赖（grep 误判为死引用），第一轮移除后 `npm run build-dev` 直接挂掉，立即回退。详见 `DEPENDENCY-NOTES.md`「回退」段。
+  - 验证 gate（全部通过）：`npm install --legacy-peer-deps` → `npm run build-dev` → `npm run verify:p0` → `npm run verify:worker-safe` → `npm test`（46 passed + 1 skipped）→ `npm run lint`（0 errors）。
+  - npm audit 基线：192 vulnerabilities（22 critical / 72 high / 88 moderate / 10 low），其中 28 个直接依赖。完整数据与升级路线建议见 `DEPENDENCY-NOTES.md`「npm audit 基线」与「后续 PR 处理顺序建议」两节。**安全升级是独立 PR，不在本批次范围**。
+  - 不可避免告警：`uuid@3.4.0` 通过传递依赖引入（多个 webpack 4 时代包）；`gitignore-fallback`（npm 11 新提示）；`Browserslist: caniuse-lite is outdated`（噪声）。三者均文档化，不阻塞构建。
 
 ---
 
