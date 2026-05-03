@@ -85,6 +85,20 @@ Chrome / Firefox / Safari distribution paths working.
   repo. The package is private (not published to the npm registry), so
   there's nothing to specifically exclude — a comment-only file does the
   job.
+- **`webpack.config.mjs` and `webpack.config.safari.mjs`** (toolchain
+  unification, 2026-05-04 ×2). Inline ~100-line webpack configs that drive
+  the Chrome / Firefox and Safari builds directly via `webpack` CLI,
+  bypassing `alpheios-node-build`'s `Builder` + preset chain. Inspection
+  showed every relevant preset (`pwa-vue.mjs`, `vue.mjs`) was importing
+  deprecated peer-dependencies (`webpack-cleanup-plugin`,
+  `mini-css-extract-plugin@^0.9.0`, `optimize-css-assets-webpack-plugin@^5`,
+  `vue-svg-loader@^0.16`, `url-loader`, `source-map-loader@^1`) that this
+  repo never actually invoked: `grep` for `\.vue'`, `\.css'`, `\.scss'` in
+  `src/` returned **zero matches**. Both new configs use `clean-webpack-plugin`
+  + `DefinePlugin` + node fallbacks for `crypto`/`stream` only; the
+  Safari variant additionally inlines `build/plist-plugin.mjs`. Generated
+  bundles are byte-level equivalent (±92 bytes from `DefinePlugin` timestamp
+  drift) to the previous output.
 
 ### Fixed
 - **Context menu duplicate-id error**: In MV3, the background service worker
@@ -123,6 +137,44 @@ Chrome / Firefox / Safari distribution paths working.
   removed `eslint-plugin-standard` was implicitly providing the
   `browser` global; without an explicit env declaration, every `browser.*`
   call in the background script triggered `'browser' is not defined`.
+- **Build toolchain — webpack pipeline now direct (2026-05-04 ×2)**:
+  - `npm run dev` / `prod` / `build-safari[-dev]` invoke `webpack --config
+    webpack.config{,.safari}.mjs --mode {development,production}` instead
+    of `alpheios-node-build/dist/build.mjs`. `alpheios-node-build` itself
+    stays as a devDep but is now used only by `update-styles`,
+    `webext-polyfill-update`, and `dist` (which delegate to its
+    `dist/files.mjs` and `dist/zip.mjs` — pure `fs-extra` helpers with no
+    webpack coupling).
+  - `webpack-cli ^5.1.4` added — required for direct CLI invocation, was
+    not previously present because the alpheios-node-build pipeline used
+    webpack programmatically.
+  - `--openssl-legacy-provider` and `--experimental-modules` flags removed
+    from every npm script. Modern webpack 5.106+ no longer hashes via
+    OpenSSL MD4, and Node 20+ has stable native ESM, so neither flag
+    contributes anything.
+  - `github-build.mjs` rewritten: no longer imports `Builder` from
+    `alpheios-node-build`; uses `execSync('npm run build')` and inlines
+    its own `generateBuildInfo` (mirror of the prior alpheios-node-build
+    helper).
+- **Node engine baseline 14.1 → 20.0** (2026-05-04 ×2):
+  - `package.json.engines.node` `>=14.1.0` → `>=20.0.0`;
+    `engines.npm` `>=6.13.0` → `>=10.0.0`.
+  - `.github/workflows/main.yml`: `node-version: '14'` → `'20'`;
+    `actions/checkout@v2` → `@v4`; `actions/setup-node@v2-beta` → `@v4`;
+    legacy `actions/create-release@v1` + `actions/upload-release-asset@v1`
+    pair replaced with `softprops/action-gh-release@v2` (single action);
+    `EndBug/add-and-commit@v4` → `@v9`. The `npm update` step that ran
+    after `npm install` is gone — semver-floating updates inside CI break
+    determinism.
+- **`.babelrc` simplified** (2026-05-04 ×2). Reduced to
+  `{ "presets": [["@babel/preset-env", { "targets": { "node": "current" } }]] }`.
+  Removed `@babel/plugin-transform-runtime`, `module-resolver`, and
+  `@babel/plugin-proposal-object-rest-spread`. The explicit `targets`
+  matters: without it, `@babel/preset-env` transforms `async`/`await`
+  through `regeneratorRuntime`, which 404s once `@babel/runtime` is gone
+  (the test suite caught this in Phase 4D — `regeneratorRuntime is not
+  defined` from `auth0-sw-client.test.js`). With Node 20+ as the jest
+  target, the transform is skipped entirely.
 - **Direct-dependency major bumps (Tier 3, 2026-05-04 follow-up)**:
   - `jsonwebtoken` `^8.5.1` → `^9.0.2` (installed 9.0.3). The repo's only
     use is `jwt.decode(accessToken)` in `src/content/content-safari.js:310`,
@@ -145,8 +197,16 @@ Chrome / Firefox / Safari distribution paths working.
     (Auth0 P1 verification, optional toolchain modernization).
   - `doc/guides/DEVELOPMENT.md` — "Modernization Context" rewritten to describe
     the completed API mapping rather than the historical V2 surface.
+    A new "Build Toolchain" section (2026-05-04 ×2) documents the inline
+    `webpack.config{,.safari}.mjs` pipeline, the reduced role of
+    `alpheios-node-build` (file ops only), the Node 20 / npm 10 engine
+    baseline, and the standard verify-gate command chain.
   - `doc/guides/BUILD-FF-CHROME.md` — declares MV3 output, Firefox 115+ minimum,
-    and a single `dist.zip` for both stores.
+    and a single `dist.zip` for both stores. Refreshed in 2026-05-04 ×2 to
+    state the Node 20 LTS / npm 10 prerequisites, the removal of the
+    `--openssl-legacy-provider` / `--experimental-modules` flags, the
+    direct `webpack --config webpack.config.mjs` invocation, and to point
+    at `DEPENDENCY-NOTES.md` "第三轮" for the dropped-package table.
   - `doc/migration/MIGRATION-CHECKLIST.md` — P0/P2/P3 progress and the 2026-05-03
     decisions are now recorded inline.
 
@@ -184,6 +244,47 @@ Chrome / Firefox / Safari distribution paths working.
   they are peer dependencies of `alpheios-node-build`'s presets, and the
   remaining `npm audit` baseline (192 vulnerabilities — left for a separate
   audit-fix PR per the user's scope decision for this round).
+- **Toolchain unification — ~30 packages dropped (2026-05-04 ×2)**.
+  Now that `webpack.config.mjs` / `webpack.config.safari.mjs` drive the
+  build directly, the entire bundle of preset peer-dependencies that
+  `alpheios-node-build/dist/presets/*.mjs` declared but our actual
+  source never used is gone:
+  - **Vue ecosystem (8)**: `vue`, `vue-template-compiler`, `vue-loader`,
+    `vue-template-loader`, `vue-style-loader`, `vue-svg-loader`, `vue-jest`,
+    `vue-eslint-parser`. `eslint-plugin-vue` and `jest-vue-preprocessor`
+    + `jest-serializer-vue` from the jest/lint side. `eslintConfig.extends`
+    drops `plugin:vue/essential`; `package.json.jest` drops the `.vue`
+    transform, the `^vue$` `moduleNameMapper`, and the `vue` entry from
+    `moduleFileExtensions`.
+  - **CSS / PostCSS / Sass (10)**: `mini-css-extract-plugin`, `css-loader`,
+    `postcss-import`, `postcss-loader`, `postcss-safe-important`,
+    `postcss-scss`, `sass`, `sass-loader`, `autoprefixer`,
+    `optimize-css-assets-webpack-plugin`, `style-loader`. CSS in this
+    repo is copied via `update-styles` (shx + alpheios-node-build's
+    `files.mjs`), never imported through webpack.
+  - **Imagemin + webpack peripherals (16)**: `imagemin`, `imagemin-jpegtran`,
+    `imagemin-optipng`, `imagemin-svgo`, `webpack-cleanup-plugin`,
+    `webpack-bundle-analyzer`, `webpack-dev-server`, `webpack-merge`,
+    `parallel-webpack`, `inspectpack`, `html-webpack-plugin`, `file-loader`,
+    `raw-loader`, `url-loader`, `source-map-loader`, `copy-webpack-plugin`,
+    `terser-webpack-plugin`, `terser`. Icons are copied directly via shx;
+    no webpack-side dev server has ever been used; `clean-webpack-plugin`
+    suffices for build-dir hygiene.
+  - **Babel runtime (5)**: `@babel/plugin-transform-modules-commonjs`,
+    `@babel/plugin-transform-runtime`, `@babel/register`, `@babel/runtime`,
+    `babel-plugin-dynamic-import-node`, `babel-plugin-module-resolver`.
+    Modern Node + webpack 5 + `@babel/preset-env { targets: { node: 'current' } }`
+    handles everything we need.
+  - Misc dead deps: `chalk` (only alpheios-node-build's CLI internally
+    used it), the accidental `caniuse-lite` direct dep introduced earlier
+    in the day during the Tier 1 baseline-fetch.
+  - Direct devDeps count: 65+ → **30**. `npm install` shows roughly -300
+    transitive packages.
+  - Vulnerability total: **135 → 37** (`-98`); critical 4 → **0**;
+    high 46 → 4. The 37 remaining are entirely inside the jest 26.6.3
+    transitive chain (`sane`/`micromatch`/`braces`/`@tootallnate/once` →
+    `jsdom`); jest 26 → 29/30 is a follow-up PR. `npm audit --omit=dev`
+    reports zero vulnerabilities.
 
 ### Verified
 - **P1 authentication** — both scenarios verified end-to-end in Chrome
@@ -198,10 +299,13 @@ Chrome / Firefox / Safari distribution paths working.
   - Detailed records in `doc/testing/P1-AUTH-SMOKE-STEPS.md`.
 
 ### Deferred
-- Toolchain swap (Webpack → Vite). See `doc/migration/PENDING-DECISIONS.md` decision
-  2: deferred to the next major version. The current Webpack +
-  `alpheios-node-build` chain is retained to keep the QA / release
-  pipeline working.
+- Toolchain swap (Webpack → Vite). See `doc/migration/PENDING-DECISIONS.md`
+  decision 2: deferred to the next major version. The 2026-05-04 toolchain
+  unification work landed 路线 C 修订版 (direct webpack CLI via
+  in-repo `webpack.config{,.safari}.mjs`) without bringing in Vite;
+  `alpheios-node-build` is kept in `devDependencies` solely for file ops
+  (`dist/files.mjs` / `dist/zip.mjs`) so the QA / release pipeline keeps
+  working.
 - End-to-end service-worker ↔ content-script integration tests via
   `puppeteer` / `playwright`. Tracked separately; the unit tests above
   cover the pure-logic surface.

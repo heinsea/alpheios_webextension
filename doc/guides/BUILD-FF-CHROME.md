@@ -2,7 +2,11 @@
 
 **1. Install Dependencies**
 
-**Prerequisites**: Node 18+ (Node 20 LTS recommended), npm 9+.
+**Prerequisites**: Node **20 LTS or newer**, npm **10 or newer** (enforced by
+`package.json.engines`). The `--openssl-legacy-provider` /
+`--experimental-modules` flags that older docs may reference are **no longer
+required and have been removed from every npm script** — modern webpack 5.106+
+no longer hashes via OpenSSL MD4, and Node 20+ has stable native ESM.
 
 **Browser support targets** (see [`../migration/PENDING-DECISIONS.md`](../migration/PENDING-DECISIONS.md) decision 1):
 
@@ -14,19 +18,16 @@
 
 A single MV3 `manifest.json` is shipped to both Chrome Web Store and Mozilla AMO.
 
-If you are on Node 22 and see install/build failures from legacy dependencies,
-use the compatibility install command:
-
-```
-npm run install:dev-safe
-```
+Standard install:
 
 ```
 npm install
-npm update
 ```
 
-For legacy dependency trees, prefer:
+If you see install failures from `peerDependencies` resolution against the
+private `alpheios-core` / `alpheios-node-build` git packages, use the
+compatibility install command (delegates to
+`npm install --legacy-peer-deps --ignore-scripts`):
 
 ```
 npm run install:dev-safe
@@ -40,12 +41,26 @@ npm run set-auth0 -- <AUTH0_CLIENT_ID>
 npm run prod
 ```
 
-This uses Webpack to build the distribution Javascript and CSS files for Chrome
-and Firefox. The build output is now Manifest V3 (service worker background,
-`action` API, `browser.scripting.*` for content/CSS injection); the Webpack +
-`alpheios-node-build` toolchain is retained for compatibility with the existing
-QA / release pipeline. A future toolchain swap (e.g. to Vite) is tracked in
-[`../migration/MIGRATION-CHECKLIST.md`](../migration/MIGRATION-CHECKLIST.md).
+This invokes Webpack 5 **directly** via the in-repo
+[`webpack.config.mjs`](../../webpack.config.mjs)
+(`npm run prod` resolves to `webpack --config webpack.config.mjs --mode production`).
+
+As of 2026-05-04 the build no longer goes through the
+`alpheios-node-build` `Builder` + preset chain. The repo keeps
+`alpheios-node-build` in `devDependencies` purely as a file-ops helper
+(`dist/files.mjs` for the `update-styles` / `webext-polyfill-update` /
+`dist` scripts; `dist/zip.mjs` for the dist zip). Webpack-side preset
+peer-dependencies (`webpack-cleanup-plugin`, `mini-css-extract-plugin`,
+`vue-svg-loader`, the imagemin pipeline, etc.) have been removed in the
+same round — see
+[`../migration/DEPENDENCY-NOTES.md`](../migration/DEPENDENCY-NOTES.md)
+"第三轮 — 工具链统一升级" for the full ~30-package removal table and the
+byte-level equivalence check against the previous output.
+
+A future toolchain swap (e.g. to Vite) is still tracked in
+[`../migration/PENDING-DECISIONS.md`](../migration/PENDING-DECISIONS.md)
+decision 2 (路线 B); the 2026-05-04 work landed 路线 C 修订版 — direct
+webpack CLI — without bringing in Vite.
 
 If you only want to test UI behavior (including the toolbar action) and do not need
 login testing yet, you can skip setting a real Auth0 client id:
@@ -55,6 +70,10 @@ npm run update-dist && npm run update-styles
 npm run set-auth0
 npm run build-dev
 ```
+
+`build-dev` is the development-mode pipeline:
+`update-dist` → `update-styles` → `dev` (which is
+`webpack --config webpack.config.mjs --mode development`).
 
 Optional test-mode auth config (for message flow validation without real Auth0 UI):
 

@@ -76,12 +76,21 @@
 ## 决策 2：构建工具链是否升级到 Vite
 
 **【已决策 — 2026-05-03 — 选择方案 A：保持现状】**
+**【2026-05-04 后续推进 — 落地路线 C 修订版】**
 
 落地状态：
 - ✅ 不动 `package.json` 与 webpack 配置
 - ✅ `./MIGRATION-CHECKLIST.md` P2「构建与依赖现代化」备注已记录"工具链升级延后到下一大版本"
 - ✅ `../guides/BUILD-FF-CHROME.md` 已注明 webpack + alpheios-node-build 仍是发布管线
 - 后续触发条件：当 Auth0 P1 通过、且团队准备发布 4.x 大版本时，再考虑分阶段升级（路线 C，见下文执行清单）
+
+**2026-05-04 后续工具链统一升级**（详见 `DEPENDENCY-NOTES.md`「第三轮」）：
+- ✅ 路线 C 修订版落地：用户决议本仓"统一升级工具链"，但仍坚守不引入 Vite（路线 B）。
+- ✅ 路线 C 的执行清单升级了，原"webpack 升 5.97 / babel 升 7.26 / 移除 `--openssl-legacy-provider`"被替换为更直接的方案：**绕过 alpheios-node-build 的 `Builder` + preset 体系**，新建本仓自有 `webpack.config.mjs` + `webpack.config.safari.mjs`，直接调 `webpack` CLI。这一刀切割了 alpheios-node-build 私有脚手架的 dead peer-deps 链锁。
+- ✅ alpheios-node-build 保留在 devDeps 但**仅供 file ops**（`dist/files.mjs`、`dist/zip.mjs`）；其 `Builder` / preset 不再被本仓任何脚本调用。
+- ✅ 删除 ~30 个 dead peer-deps（vue 系 8 / css/postcss 系 9 / imagemin+webpack 周边 16 / jest+babel+lint 8）。
+- ✅ Node 引擎从 14.1 → 20.0；CI 同步 14 → 20 LTS；移除所有 `--openssl-legacy-provider --experimental-modules` flag。
+- ✅ 漏洞数从 192（第一轮起点）/ 135（Tier 1+2+3 之后）→ **37**（生产依赖 0 漏洞，剩余 critical 0 / high 4 全部在 jest 26 transitive 链；jest 26 → 29/30 是独立 PR）。
 
 ### 背景
 

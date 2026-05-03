@@ -1,16 +1,7 @@
 {
-  "presets": ["@babel/preset-env"],
-  "plugins": [
-    ["@babel/plugin-transform-runtime",
-      {
-        "regenerator": true
-      }
-    ],
-    ["@babel/plugin-proposal-object-rest-spread"],
-    ["module-resolver", {
-      "alias": {
-        "alpheios-components": "./node_modules/alpheios-core/packages/components/dist/alpheios-components.js"
-      }
+  "presets": [
+    ["@babel/preset-env", {
+      "targets": { "node": "current" }
     }]
   ]
 }

@@ -18,6 +18,84 @@ Remaining modernization work (toolchain, cross-browser packaging strategy,
 end-to-end Auth0 verification, integration tests) is tracked in
 [`../migration/MIGRATION-CHECKLIST.md`](../migration/MIGRATION-CHECKLIST.md).
 
+## Build Toolchain
+
+> **2026-05-04 update — toolchain unification (决策 2 路线 C 修订版).** This
+> section reflects the post-unification state. For the full history (and the
+> reasoning behind keeping `alpheios-node-build` in the dependency graph at
+> all), see
+> [`../migration/DEPENDENCY-NOTES.md`](../migration/DEPENDENCY-NOTES.md)
+> "第三轮 — 工具链统一升级" and the matching
+> [`../migration/PENDING-DECISIONS.md`](../migration/PENDING-DECISIONS.md)
+> decision 2 update.
+
+The Chrome / Firefox / Safari builds are driven directly by Webpack 5 via two
+in-repo configs:
+
+- [`webpack.config.mjs`](../../webpack.config.mjs) — Chrome / Firefox entry
+  points (`src/background/background.js` and `src/content/content.js`).
+- [`webpack.config.safari.mjs`](../../webpack.config.safari.mjs) — Safari
+  `content-safari` entry plus the `PlistPlugin` hook that writes the build
+  number into the Xcode `Info.plist` files under `src/safari-app-extension/`.
+
+The npm scripts that wrap these are:
+
+| script | resolves to |
+|---|---|
+| `npm run dev` | `webpack --config webpack.config.mjs --mode development` |
+| `npm run prod` | `webpack --config webpack.config.mjs --mode production` |
+| `npm run build-dev` | `update-dist` → `update-styles` → `dev` |
+| `npm run build-prod` | `update-dist` → `update-styles` → `lint` → `prod` |
+| `npm run build-safari[-dev]` | analogous, swapping the safari config |
+
+### `alpheios-node-build`'s reduced role
+
+The private `alpheios-node-build` git package historically supplied a
+`Builder` class plus a `pwa-vue` / `vue` preset chain that drove webpack
+programmatically. That chain pulled in a long list of deprecated peer
+dependencies (`webpack-cleanup-plugin`, `mini-css-extract-plugin`,
+`vue-svg-loader`, the imagemin pipeline, …) which `src/` never actually
+imported (`grep` for `\.vue'` / `\.css'` / `\.scss'` returns zero matches),
+but whose absence still broke the top-level `import` of `Builder` itself.
+
+After the 2026-05-04 unification, `alpheios-node-build` is **kept in
+`devDependencies` only as a file-ops helper**:
+
+- `dist/files.mjs` is invoked by the `update-styles`,
+  `webext-polyfill-update`, and `dist` npm scripts to copy / replace files.
+- `dist/zip.mjs` is invoked by the `dist` npm script to produce the
+  release zip under `dist-zip/`.
+
+Neither helper touches webpack. Nothing in this repo imports `Builder` or
+the preset modules anymore — `github-build.mjs` was rewritten to use
+`execSync('npm run build')` and inlines its own `generateBuildInfo` helper.
+
+### Engine baseline
+
+`package.json.engines` requires **Node `>= 20.0.0` and npm `>= 10.0.0`**.
+The CI workflow (`.github/workflows/main.yml`) tracks this with
+`actions/setup-node@v4` pinned at Node 20. The
+`--openssl-legacy-provider` / `--experimental-modules` Node flags that
+appeared throughout the older npm scripts have been removed entirely;
+modern webpack 5.106+ no longer hashes via OpenSSL MD4, and Node 20+ has
+stable native ESM.
+
+### Verify gate
+
+After any toolchain or dependency change, run the standard chain:
+
+```
+cmd.exe /c "npm install --legacy-peer-deps"
+npm run build-dev
+npm run verify:p0
+npm run verify:worker-safe
+npm test
+npm run lint
+```
+
+(WSL bash hits intermittent `EBUSY` against Windows file locks during
+`npm install`; `cmd.exe /c` is the stable workaround.)
+
 ## Authentication
 The Webextension uses Auth0 for Authentication. In order for Authentication to work,
 the Auth0 Client ID secret must be present in the environment.

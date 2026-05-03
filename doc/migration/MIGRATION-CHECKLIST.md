@@ -121,6 +121,18 @@
   - **累计成果**：漏洞 192 → 135（**-57，-30%**），critical 22 → 4（**-82%**），high 72 → 46。直接依赖中已彻底处理：`jsonwebtoken`、`webpack-bundle-analyzer`、`webpack` 系列 patch。
   - **剩余 4 critical / 46 high 阻塞点**：alpheios-node-build 上游链路、vue-jest（vue 2 + jest 26 紧耦合）、webpack-dev-server 3.x（仅本地，可单独升 5.x）、imagemin-svgo（alpheios-node-build peer dep）、copy-webpack-plugin 6→11（webpack 5 API 大改）。这批需要先解耦 / 升级 alpheios-node-build 才有解，匹配决策 2「下一大版本统一处理工具链」。
   - **验证 gate 全绿**（每个 Tier 都跑了一次完整链）：`build-dev` / `verify:p0` / `verify:worker-safe` / `npm test`（46 passed + 1 skipped）/ `npm run lint`（0 errors）。
+- **2026-05-04 后续 ×2：工具链统一升级**（决策 2 路线 C 修订版落地，详见 `doc/migration/DEPENDENCY-NOTES.md`「第三轮」段）。
+  - **核心动作**：绕开 `alpheios-node-build` 的 `Builder` + preset 体系。新建 `webpack.config.mjs` + `webpack.config.safari.mjs`，直接调 `webpack` CLI。`alpheios-node-build` 保留在 devDeps 仅供 `dist/files.mjs` / `dist/zip.mjs` 文件操作。**不引入 Vite**（仍守决策 2 反对路线 B 的立场）。
+  - **批量删除 ~30 个 dead peer-deps**：vue 系（8）、css/postcss 系（9）、imagemin + webpack 周边（16）、jest/babel/lint vue（8）。直接 devDeps 从 65+ → **30**。
+  - **`.babelrc` 简化**：仅 `@babel/preset-env { targets: { node: 'current' } }`。删除 `@babel/plugin-transform-runtime`、`module-resolver`、`@babel/plugin-proposal-object-rest-spread`。`@babel/preset-env` 没目标就转 `async/await` 调 `regeneratorRuntime`，所以必须显式设 `targets`（jest 在 Node 20+ 跑，原生支持 async）。
+  - **CI / Node engine 升级**：`engines.node` `>=14.1.0` → `>=20.0.0`；`engines.npm` `>=6.13.0` → `>=10.0.0`。`.github/workflows/main.yml` `node-version: 14` → `20`；`actions/checkout@v2` → `@v4`；`actions/setup-node@v2-beta` → `@v4`；`actions/create-release@v1` + `actions/upload-release-asset@v1` 合并为 `softprops/action-gh-release@v2`；`EndBug/add-and-commit@v4` → `@v9`。**移除所有 `--openssl-legacy-provider --experimental-modules` flag**。
+  - **github-build.mjs 重写**：移除 `import Builder from 'alpheios-node-build'`，改 `execSync('npm run build')`；inline `generateBuildInfo` 函数。
+  - **dist 产物 byte-level 等价**：升级前 `background.js` 145,189 B / `content.js` 13,644,055 B；升级后 145,234 B / 13,644,102 B（仅 +92 bytes 的 DefinePlugin 时间戳差异）。✓
+  - **漏洞再降 -98**：135 → **37**（critical 4 → **0**，high 46 → 4）。`npm audit --omit=dev`：**生产依赖 0 漏洞**。
+  - **剩余 37 漏洞全部在 jest 26.6.3 transitive 链**（`sane`/`micromatch`/`braces`/`@tootallnate/once`），属 jest 26→29/30 独立 PR 范围。
+  - **验证 gate 全绿**（5 个 Phase 每个都跑了一次）：build-dev / verify:p0 / verify:worker-safe / 47 tests / lint。
+  - **Safari runtime 验证**：webpack.config.safari.mjs 经 build-dev 通过，产出 `dist/content-safari.js`。但完整 Safari 加载/Auth0/扩展激活验证需 macOS + Xcode 环境，**用户后续手动验证**。
+  - **总累计**（vs 第一轮起点 192）：漏洞 -155（-81%），critical 22→0（-100%），high 72→4（-94%）。
 
 ---
 
@@ -172,6 +184,10 @@
   - `doc/guides/BUILD-FF-CHROME.md` 已声明 Firefox 115+ 最低支持、单一 MV3 `dist.zip` 投递两侧 store；保留 webpack 工具链以兼容现有发布管线，并把 Vite 升级标记为延后项。
   - 新增 `doc/migration/PENDING-DECISIONS.md`：跨浏览器策略、构建工具链、MV2 残余清理三项决策矩阵；2026-05-03 决议 A/A/A，已在文档顶部及各章节标记落地状态。
   - 新增 `CHANGELOG.md`（仓库根，路径 `../../CHANGELOG.md`，Keep-a-Changelog 格式）：完整记录本次 MV3 迁移的 Added / Changed / Removed / Deferred 项，作为下一个 release 的 changelog 草稿。
+- **2026-05-04 工具链升级追加更新**（详见 `doc/migration/DEPENDENCY-NOTES.md`「第三轮」段）：
+  - `doc/guides/BUILD-FF-CHROME.md` 与 `doc/guides/DEVELOPMENT.md` 同步刷新：build 命令改为直接 `webpack --config webpack.config.{mjs,safari.mjs}`；Node 引擎从 14 → 20 LTS；alpheios-node-build 标注为「仅供 file ops」。
+  - `doc/migration/PENDING-DECISIONS.md` 决策 2「保持现状」段落追加「2026-05-04 后续推进 — 落地路线 C 修订版」记录，把 Vite 仍标为不引入。
+  - **CHANGELOG.md 新增 Added / Changed / Removed 三段大批条目**：inline webpack config、~30 个 dead peer-deps 移除、Node 14 → 20、`@babel/preset-env` 加 `targets: node:current`、`github-build.mjs` 重写。这一节作为 4.0.0 release 的核心 changelog。
 - RC 版本：在 Auth0 P1 真机验证通过后，按 `package.json` 当前 `version: 3.3.2` → 建议升 `4.0.0`（manifest 主版本变更属于 BREAKING 级别）打 tag。
 - 最终阻塞点：
   - **Auth0 P1 真实凭据验证（方案 A）**——见 `doc/testing/P1-AUTH-SMOKE-STEPS.md`。方案 B（`TEST_ID` 测试模式）已于 2026-05-03 通过，覆盖消息链路；方案 A 在拿到真实 Auth0 凭据后补做即可。

@@ -4,29 +4,28 @@
   "description": "A WebExtension implementation of Alpheios",
   "main": "index.js",
   "scripts": {
-    "set-node-build-deps": "npx install-peerdeps alpheios-node-build --dev --only-peers",
-    "build": "npm run build-prod && node --openssl-legacy-provider --experimental-modules ./node_modules/alpheios-node-build/dist/build.mjs -m all -M all -p vue -c config-content-safari.mjs",
+    "build": "npm run build-prod && webpack --config webpack.config.safari.mjs --mode production && npm run update-styles",
     "build-prod": "npm run update-dist && npm run update-styles && npm run lint && npm run prod",
     "build-dev": "npm run update-dist && npm run update-styles && npm run dev",
     "verify:p0": "node ./scripts/verify_p0.mjs",
     "verify:worker-safe": "node ./scripts/verify_worker_safe.mjs",
-    "build-safari": "npm run update-dist && npm run update-styles && npm run lint && node --openssl-legacy-provider --experimental-modules ./node_modules/alpheios-node-build/dist/build.mjs -m all -M all -p vue -c config-content-safari.mjs && npm run update-styles",
-    "build-safari-dev": "npm run update-dist && npm run update-styles && node --openssl-legacy-provider --experimental-modules ./node_modules/alpheios-node-build/dist/build.mjs -m all -M development -p vue -c config-content-safari.mjs && npm run update-styles",
+    "build-safari": "npm run update-dist && npm run update-styles && npm run lint && webpack --config webpack.config.safari.mjs --mode production && npm run update-styles",
+    "build-safari-dev": "npm run update-dist && npm run update-styles && webpack --config webpack.config.safari.mjs --mode development && npm run update-styles",
     "install:dev-safe": "npm install --legacy-peer-deps --ignore-scripts",
     "set-auth0": "node ./scripts/update_env.mjs",
-    "update-styles": "node --experimental-modules ./node_modules/alpheios-node-build/dist/files.mjs replace --s=./node_modules/alpheios-core/packages/components/dist/style --t=dist/style",
+    "update-styles": "node ./node_modules/alpheios-node-build/dist/files.mjs replace --s=./node_modules/alpheios-core/packages/components/dist/style --t=dist/style",
     "update-dist": "shx rm -rf ./dist && shx mkdir ./dist && shx cp -r ./src/manifest/* ./dist && shx cp -r ./src/icons ./dist && shx cp ./src/compatibility-fixes/compatibility-fixes.js ./dist && shx cp ./src/env/env-webext-template.js ./dist/env-webext.js && shx cp ./src/env/env-safari-app-ext-template.js ./src/lib/auth/env-safari-app-ext.js && shx mkdir ./dist/support && npm run webext-polyfill-update",
-    "webext-polyfill-update": "node --experimental-modules ./node_modules/alpheios-node-build/dist/files.mjs replace --s=./node_modules/webextension-polyfill/dist --t=dist/support/webextension-polyfill",
+    "webext-polyfill-update": "node ./node_modules/alpheios-node-build/dist/files.mjs replace --s=./node_modules/webextension-polyfill/dist --t=dist/support/webextension-polyfill",
     "lint": "eslint --fix src/**/*.js",
-    "prod": "node --openssl-legacy-provider --experimental-modules ./node_modules/alpheios-node-build/dist/build.mjs -m webpack -M production -p app -c config.mjs",
-    "dev": "node --openssl-legacy-provider --experimental-modules ./node_modules/alpheios-node-build/dist/build.mjs -m webpack -M development -p app -c config.mjs",
+    "prod": "webpack --config webpack.config.mjs --mode production",
+    "dev": "webpack --config webpack.config.mjs --mode development",
     "test": "jest",
     "zip": "node ./build/zip.js",
     "conventional-commit": "npx git-cz",
     "version-set-major": "npm version major",
     "version-set-minor": "npm version minor",
     "version-set-patch": "npm version patch",
-    "dist": "node --experimental-modules ./node_modules/alpheios-node-build/dist/files.mjs copy --s=/dist --t=dist-temp  --clean && node --experimental-modules ./node_modules/alpheios-node-build/dist/zip.mjs --s=/dist-temp --t=dist-zip --f=dist.zip && node --experimental-modules ./node_modules/alpheios-node-build/dist/files.mjs clean --t=dist-temp",
+    "dist": "node ./node_modules/alpheios-node-build/dist/files.mjs copy --s=/dist --t=dist-temp  --clean && node ./node_modules/alpheios-node-build/dist/zip.mjs --s=/dist-temp --t=dist-zip --f=dist.zip && node ./node_modules/alpheios-node-build/dist/files.mjs clean --t=dist-temp",
     "github-build": "node ./github-build.mjs"
   },
   "repository": {
@@ -44,88 +43,41 @@
     "@auth0/auth0-spa-js": "1.8.1",
     "@babel/core": "^7.12.3",
     "@babel/eslint-parser": "^7.12.0",
-    "@babel/plugin-transform-modules-commonjs": "^7.12.1",
-    "@babel/plugin-transform-runtime": "^7.12.1",
     "@babel/preset-env": "^7.12.1",
-    "@babel/register": "^7.12.1",
-    "@babel/runtime": "^7.12.5",
     "alpheios-core": "git+https://github.com/alpheios-project/alpheios-core.git",
     "alpheios-node-build": "git+https://github.com/alpheios-project/node-build.git#semver:^3.5.1",
     "archiver": "^5.0.2",
-    "autoprefixer": "^10.0.1",
     "babel-loader": "^8.1.0",
-    "babel-plugin-dynamic-import-node": "^2.3.0",
-    "babel-plugin-module-resolver": "^4.0.0",
-    "chalk": "^4.1.0",
     "clean-webpack-plugin": "^3.0.0",
     "command-line-args": "^5.1.1",
-    "copy-webpack-plugin": "^6.3.0",
     "crypto-browserify": "^3.12.0",
-    "css-loader": "^5.0.1",
     "cz-conventional-changelog": "^3.3.0",
     "eslint": "^7.12.1",
     "eslint-config-standard": "^16.0.1",
     "eslint-plugin-import": "^2.22.1",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^4.2.1",
-    "eslint-plugin-vue": "^7.1.0",
-    "file-loader": "^6.2.0",
     "fs-extra": "^9.0.1",
     "git-branch": "^2.0.1",
-    "html-webpack-plugin": "^4.5.0",
-    "imagemin": "^7.0.1",
-    "imagemin-jpegtran": "^7.0.0",
-    "imagemin-optipng": "^8.0.0",
-    "imagemin-svgo": "^8.0.0",
-    "inspectpack": "^4.5.2",
     "jest": "^26.6.3",
-    "jest-serializer-vue": "^2.0.2",
-    "jest-vue-preprocessor": "^1.7.1",
     "jsonwebtoken": "^9.0.2",
-    "mini-css-extract-plugin": "^1.2.1",
-    "optimize-css-assets-webpack-plugin": "^5.0.4",
-    "parallel-webpack": "^2.6.0",
-    "postcss-import": "^13.0.0",
-    "postcss-loader": "^4.0.4",
-    "postcss-safe-important": "^1.2.0",
-    "postcss-scss": "^3.0.2",
-    "raw-loader": "^4.0.2",
-    "sass": "^1.29.0",
-    "sass-loader": "^10.0.5",
     "shx": "^0.3.3",
-    "source-map-loader": "^1.1.2",
     "stream-browserify": "^3.0.0",
-    "style-loader": "^2.0.0",
-    "terser": "^5.3.8",
-    "terser-webpack-plugin": "4.2.3",
-    "url-loader": "^4.1.1",
     "uuid": "^8.3.1",
-    "vue": "^2.6.12",
-    "vue-eslint-parser": "^7.1.1",
-    "vue-jest": "^3.0.7",
-    "vue-loader": "^15.9.5",
-    "vue-style-loader": "^4.1.2",
-    "vue-svg-loader": "^0.16.0",
-    "vue-template-compiler": "^2.6.12",
-    "vue-template-loader": "^1.1.0",
     "webextension-polyfill": "^0.6.0",
     "webpack": "^5.4.0",
-    "webpack-bundle-analyzer": "^4.10.2",
-    "webpack-cleanup-plugin": "^0.5.1",
-    "webpack-dev-server": "^3.11.0",
-    "webpack-merge": "4.2.2",
+    "webpack-cli": "^5.1.4",
     "wrap-range-text": "^1.0.1",
     "zip-a-folder": "0.0.12"
   },
   "engines": {
-    "node": ">= 14.1.0",
-    "npm": ">= 6.13.0"
+    "node": ">= 20.0.0",
+    "npm": ">= 10.0.0"
   },
   "jest": {
     "verbose": true,
     "transform": {
-      "^.+\\.jsx?$": "babel-jest",
-      ".*\\.(vue)$": "<rootDir>/node_modules/jest-vue-preprocessor"
+      "^.+\\.jsx?$": "babel-jest"
     },
     "testPathIgnorePatterns": [
       "/node_modules/",
@@ -134,18 +86,13 @@
     "transformIgnorePatterns": [
       "!node_modules/alpheios-data-models/"
     ],
-    "moduleNameMapper": {
-      "^vue$": "vue/dist/vue.common.js"
-    },
     "moduleFileExtensions": [
-      "js",
-      "vue"
+      "js"
     ]
   },
   "eslintConfig": {
     "extends": [
-      "standard",
-      "plugin:vue/essential"
+      "standard"
     ],
     "env": {
       "browser": true,
@@ -168,7 +115,6 @@
     "**/src/env"
   ],
   "dependencies": {
-    "caniuse-lite": "^1.0.30001791",
     "webextension-polyfill": "^0.6.0"
   },
   "config": {

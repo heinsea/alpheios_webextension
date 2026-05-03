@@ -9,7 +9,110 @@
 
 ## 基线日期
 
-2026-05-04 第一轮（P2 收尾批次） + 第二轮（依赖清理 Tier 1+2+3）
+2026-05-04 第一轮（P2 收尾批次） + 第二轮（依赖清理 Tier 1+2+3） + 第三轮（工具链统一升级）
+
+## 第三轮（2026-05-04 后续 ×2）— 工具链统一升级（决策 2 路线 C 修订版）
+
+> 第二轮做完后剩 4 critical / 46 high 漏洞悬在 alpheios-node-build 的私有 preset 链上。
+> 用户决议"统一升级工具链"——本轮的核心动作是**绕开 alpheios-node-build 的 `Builder` + preset 体系**：
+> 新建本仓自有 webpack 配置直接调 `webpack` CLI，删 ~30 个被 preset 锁定的 dead peer-deps。
+> 不引入 Vite（仍坚守决策 2 反对路线 B 的立场）。alpheios-node-build 仅供 file ops。
+
+### 关键瓶颈识别
+
+`node_modules/alpheios-node-build/dist/builder.mjs:9` 在模块顶部 `import` 了**全部** preset
+（包括我们用不到的 `pwa-vue.mjs`、`vue.mjs`、`vue3.mjs`），任何 preset 的依赖缺失就让 `Builder`
+导入失败。`pwa-vue.mjs` / `vue.mjs` 引用：`webpack-cleanup-plugin`、`mini-css-extract-plugin@^0.9.0`、
+`optimize-css-assets-webpack-plugin@^5`、`vue-svg-loader@^0.16`、`url-loader`、`source-map-loader@^1`。
+这些都是 deprecated/EOL 包，**alpheios-node-build 的 peer-deps 锁住了它们**——任何升级尝试都会
+让 builder.mjs 启动失败（这正是 P2 收尾时移除 webpack-cleanup-plugin 立即触发的失败）。
+
+但实际上我们用不到这些 preset 的内容（grep 在 src/ 下 `\.vue'` / `\.css'` / `\.scss'` 全部 0 命中）：
+- `alpheios-components` 通过 `resolve.alias` 指向预构建 UMD 包，不走 webpack 编译
+- CSS 由 `update-styles` 用 `shx cp` 复制到 `dist/style/`，不参与 webpack
+- 图标是 PNG，由 `update-dist` 直接复制
+- 无 dev server 使用
+
+### 实施切片
+
+**Phase 1**：新建 `webpack.config.mjs`（主，~100 行）+ `webpack.config.safari.mjs`（Safari，~110 行）。直接消费 webpack CLI。
+
+**Phase 2**：`package.json` `scripts.dev` / `prod` / `build-safari{,-dev}` 改为 `webpack --config webpack.config.{mjs,safari.mjs} --mode {dev,prod}`。新增 `webpack-cli ^5.1.4` 到 devDeps。删除 `build/config.mjs` + `build/config-content-safari.mjs`。
+
+**Phase 3**：首轮 verify gate。inline 配置产物与原 alpheios-node-build pipeline byte-level 等价（仅 ±92 bytes 的 DefinePlugin 时间戳差异）。
+
+**Phase 4A-4D**：分批删除 dead peer-deps。共 ~30 包：
+
+| 批 | 包 |
+|---|---|
+| 4A vue 系（8） | `vue` `vue-template-compiler` `vue-loader` `vue-template-loader` `vue-style-loader` `vue-svg-loader` `vue-jest` `vue-eslint-parser` |
+| 4B css/postcss 系（9） | `mini-css-extract-plugin` `css-loader` `postcss-import` `postcss-loader` `postcss-safe-important` `postcss-scss` `sass` `sass-loader` `autoprefixer` `optimize-css-assets-webpack-plugin` |
+| 4C imagemin + webpack 周边（16） | `imagemin` `imagemin-jpegtran` `imagemin-optipng` `imagemin-svgo` `webpack-cleanup-plugin` `webpack-bundle-analyzer` `webpack-dev-server` `webpack-merge` `parallel-webpack` `inspectpack` `html-webpack-plugin` `file-loader` `raw-loader` `url-loader` `source-map-loader` `copy-webpack-plugin` `terser-webpack-plugin` `terser` `style-loader` |
+| 4D jest/babel/lint vue（8） | `jest-vue-preprocessor` `jest-serializer-vue` `chalk` `babel-plugin-module-resolver` `babel-plugin-dynamic-import-node` `@babel/plugin-transform-modules-commonjs` `@babel/register` `@babel/runtime` `@babel/plugin-transform-runtime` `eslint-plugin-vue` |
+
+伴随配置更新：
+- `.babelrc` 简化为仅 `@babel/preset-env` 加 `targets: { node: 'current' }`（jest 跑在 Node 20+，`async/await` 不需要 regenerator transform）
+- `package.json.jest`：删 `.vue` transform 与 `^vue$` moduleNameMapper、`vue` moduleFileExtension
+- `package.json.eslintConfig.extends`：删 `plugin:vue/essential`
+- `package.json.dependencies`：清掉 Phase A 误装的 `caniuse-lite`（应是 transitive，不入 direct deps）
+
+**Phase 5**：CI / Node engine 升级
+- `package.json.engines.node` `>= 14.1.0` → `>= 20.0.0`；`engines.npm` `>= 6.13.0` → `>= 10.0.0`
+- `.github/workflows/main.yml`：`node-version: '14'` → `'20'`；`actions/checkout@v2` → `@v4`；`actions/setup-node@v2-beta` → `@v4`；`actions/create-release@v1` + `actions/upload-release-asset@v1` 合并替换为 `softprops/action-gh-release@v2`；`EndBug/add-and-commit@v4` → `@v9`
+- 移除所有 `--openssl-legacy-provider --experimental-modules` flag（Node 20 不需要；webpack 5.106 也不需要）
+- `github-build.mjs` 重写：移除 `import Builder from 'alpheios-node-build'`，改用 `execSync('npm run build')`；inline `generateBuildInfo` 函数（不再依赖 alpheios-node-build/dist/support）
+
+### 验证结果
+
+每个 Phase 之后跑：`cmd.exe /c "npm install --legacy-peer-deps"` → `npm run build-dev` → `npm run verify:p0` → `npm run verify:worker-safe` → `npm test` → `npm run lint`。**全部 5 个 Phase（含 Phase 4 的 4 个子批次）每次都全绿。**
+
+dist 产物大小（webpack development build）：
+- 升级前：`background.js` 145,189 B / `content.js` 13,644,055 B（合计 13.8 MB）
+- 升级后：`background.js` 145,234 B / `content.js` 13,644,102 B（合计 13.8 MB）
+- 差异：+92 bytes（DefinePlugin 时间戳变化），byte-level 等价 ✓
+
+### 累计成果
+
+| | 第一轮起点 | 第二轮 Tier 1+2+3 | 第三轮工具链 | 总变化 |
+|---|---|---|---|---|
+| critical | 22 | 4 | **0** | -22（-100%）|
+| high | 72 | 46 | **4** | -68（-94%）|
+| moderate | 88 | 74 | **23** | -65（-74%）|
+| low | 10 | 11 | **10** | 0 |
+| **total** | **192** | **135** | **37** | **-155（-81%）**|
+
+`npm audit --omit=dev`：**生产依赖 0 漏洞**。
+
+direct devDeps 数量：第一轮 65+ → 现在 **30**（含 `alpheios-core` `alpheios-node-build` 这两个 git+ 私有包）。
+package-lock.json 的 packages 总数显著缩小（具体由 `npm install` 输出反映）。
+
+### 剩余 37 漏洞的归因
+
+全部在 **jest 26.6.3 transitive 链** 上（`@jest/core` → `jest-haste-map` → `sane` → `micromatch`/`braces`、
+`jest-jasmine2` → `babel-jest`、`@tootallnate/once` → `http-proxy-agent` → `jsdom`）。修法是 jest 26 → 29/30，
+属于独立 PR（破坏性变更涉及 `babel-jest` API、`jest.config.js` flat 形式、testEnvironment 默认值变化等）。
+
+### 经验记录
+
+1. **alpheios-node-build 的 builder.mjs 顶层 import 全部 preset** 是这次 dead-deps 锁死的真正机制，
+   仅靠 `package.json.peerDependencies` 检视看不出来。下次类似排障要 grep 私有脚手架 `import` 链。
+2. **Inline webpack config 的 byte-level 等价性**是验证替换正确性的最强证据。如果差异远超 ~100 bytes，
+   说明 entry / DefinePlugin / fallback / alias 任何一项漏配。
+3. **`@babel/preset-env` 不带 `targets` 时默认转 `async/await` 调 `regeneratorRuntime`**——删掉
+   `@babel/plugin-transform-runtime` 后 jest 立即崩。修法：声明 `targets: { node: 'current' }` 让
+   preset-env 跳过 async transform。Node 20 native 支持。
+4. **WSL bash 与 Windows 文件锁的 EBUSY 问题**经过本轮再次验证：`cmd.exe /c "npm install ..."` 是
+   稳定的 workaround；不应用 WSL bash 跑 npm install。
+
+### Safari 验证
+
+`webpack.config.safari.mjs` 已通过 build-dev 验证产出 `dist/content-safari.js`。但完整 Safari runtime
+验证（Xcode App Extension 加载、Auth0 popup loginWithPopup 流程、扩展激活/停用）需要 macOS + Xcode 环境，
+**用户后续手动验证**。Plist 注入由 `build/plist-plugin.mjs` 在 webpack `compiler.hooks.done` 阶段写入
+`src/safari-app-extension/AlpheiosSafari/Info.plist` 与 `AlpheiosReadingTools/Info.plist`，逻辑与原
+alpheios-node-build/vue preset 一致。
+
+---
 
 ## 第二轮（2026-05-04 后续）— Tier 1 + 2 + 部分 3
 
