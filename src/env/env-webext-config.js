@@ -1,6 +1,6 @@
 const auth0Env = {
   AUTH0_DOMAIN: 'alpheios.auth0.com',
-  AUTH0_CLIENT_ID: 'AUTH0_CLIENT_ID',
+  AUTH0_CLIENT_ID: 'LOCAL_DEV_NO_AUTH',
   TEST_ID: '',
   ENDPOINTS: {
     wordlist: 'https://userapis.alpheios.net/v1/words',
