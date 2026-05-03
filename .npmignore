@@ -1,0 +1,6 @@
+# Empty .npmignore — silences npm 11's `gitignore-fallback` warning.
+# This package is not published to npm (private webextension), so there are
+# no files we explicitly need to exclude. The warning fired because npm
+# was falling back to .gitignore for publish-exclude semantics.
+#
+# Documented in `doc/migration/DEPENDENCY-NOTES.md` (2026-05-04 baseline).

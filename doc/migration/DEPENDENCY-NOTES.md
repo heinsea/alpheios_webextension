@@ -9,9 +9,96 @@
 
 ## 基线日期
 
-2026-05-04
+2026-05-04 第一轮（P2 收尾批次） + 第二轮（依赖清理 Tier 1+2+3）
 
-## 本轮已处理
+## 第二轮（2026-05-04 后续）— Tier 1 + 2 + 部分 3
+
+> 上一轮完成后用户继续推进，分为三档执行：
+> - **Tier 1**：消除两条已知 install warning（quick wins）
+> - **Tier 2**：跑非 `--force` 的 `npm audit fix`，看 transitive 依赖能修多少
+> - **Tier 3**（部分）：升 1-2 个直接依赖跨主版本（择 API 变化最小者）
+
+### Tier 1：清理 install warnings
+
+| 改动 | 文件 | 效果 |
+|---|---|---|
+| 新建空 `.npmignore`（仅注释） | 仓库根 | 消除 `npm warn gitignore-fallback`（npm 11 提示）。本仓不发布到 npm，故 `.npmignore` 内容可空。 |
+| `npm install caniuse-lite --legacy-peer-deps` | `package-lock.json` | 消除 lint 运行时打印的 `Browserslist: caniuse-lite is outdated` 警告。`browserslist@latest --update-db` 因内部 `npm install` 缺 `--legacy-peer-deps` 失败，改为手动升级 caniuse-lite。 |
+
+验证：再次跑 `cmd.exe /c "npm install --legacy-peer-deps"` + `npm run lint`，两条 warning 均不再出现。
+
+### Tier 2：`npm audit fix`（非 --force）
+
+```
+cmd.exe /c "npm audit fix --legacy-peer-deps"
+# added 124 packages, removed 196 packages, changed 273 packages, audited 1915 packages in 1m
+```
+
+**漏洞数变化**：
+
+| severity | 第一轮（修前） | Tier 2 之后 |
+|---|---|---|
+| critical | 22 | 6 |
+| high | 72 | 47 |
+| moderate | 88 | 73 |
+| low | 10 | 11 |
+| **total** | **192** | **137** |
+
+audit fix 在 semver 范围内自动把多个直接依赖的安装版本拉到最新 patch / minor：
+
+| 包 | 第一轮安装 | Tier 2 后安装 | declared range |
+|---|---|---|---|
+| `webpack` | 5.4.0 | **5.106.2** | `^5.4.0`（未改）|
+| `terser` | 5.3.8 | **5.46.2** | `^5.3.8`（未改）|
+| `vue` | 2.6.12 | **2.7.16**（最后一个 2.x） | `^2.6.12`（未改）|
+| `eslint` | 7.12.1 | **7.32.0**（最后一个 7.x） | `^7.12.1`（未改）|
+| `copy-webpack-plugin` | 6.3.0 | **6.4.1** | `^6.3.0`（未改）|
+
+**注意**：上述包的 `package.json` declared range **未刷新**。原因：caret 范围已经包含了新装版本，刷新 declared range 是装饰性变更，无功能效果。`package-lock.json` 是单一事实来源，记录了实际安装版本。如果后续维护需要"硬性下限"，可在单独 PR 里 bump declared range（建议至少 bump 到漏洞 advisory 的 fix 起点，例如 `webpack: ^5.94.0` 才彻底跳出 `<=5.93.0` 的漏洞范围）。
+
+完整 verify gate（build / verify:p0 / verify:worker-safe / test / lint）全部通过；46 + 1 skipped tests。
+
+### Tier 3（部分）：直接依赖跨主版本升级
+
+#### `jsonwebtoken` 8.5.1 → 9.0.3
+
+- 仓库实际使用面：`src/content/content-safari.js:310` 的 `jwt.decode(accessToken)`，**唯一调用点**。
+- API 安全性：`jwt.decode` 在 8 → 9 完全无变化。9.x 的 breaking changes 集中在 `sign` / `verify`（默认 `algorithms`、回调签名等），与本仓无关。
+- 历史背景：上游曾有 dependabot PR #351 提议升 9.0.0（参见 `doc/archive/alpheios问题.md:62`）。
+- 修改：`package.json` 的 `^8.5.1` → `^9.0.2`，`npm install --legacy-peer-deps` 安装到 `9.0.3`。
+- 验证：完整 verify gate 通过；漏洞数 137 → 136（-1 high）。
+
+#### `webpack-bundle-analyzer` 3.9.0 → 4.10.2
+
+- 仓库实际使用面：仅作为 CLI 工具（`webpack-bundle-analyzer lib/bin/analyzer.js`），**全仓零 import**。本地 dev 工具，不进 production bundle。
+- API 安全性：版本 4 引入 ESM 与新选项，但 CLI 行为兼容；不影响 build 流程。
+- 修改：`package.json` 的 `^3.9.0` → `^4.10.2`，安装到 `4.10.2`。
+- 验证：完整 verify gate 通过；漏洞数 136 → **135**（-1 critical）。
+
+### Tier 1+2+3 累计成果
+
+| | 起点（Tier 1 之前） | 终点（Tier 3 之后） | 变化 |
+|---|---|---|---|
+| critical | 22 | **4** | **-18（-82%）** |
+| high | 72 | **46** | **-26** |
+| moderate | 88 | **74** | **-14** |
+| low | 10 | **11** | +1 |
+| **total** | **192** | **135** | **-57（-30%）** |
+| install warnings | 2 | **0** | -2 |
+
+直接依赖中已修：`jsonwebtoken`（critical/high 全清）、`webpack-bundle-analyzer`（critical 全清）、加上 audit fix 自动处理的 `webpack` / `terser` / `eslint` / `vue` / `copy-webpack-plugin` 等的 patch 升级。
+
+### 仍未解决的 4 个 critical / 46 个 high
+
+经过本轮处理后剩余的 critical 集中在 alpheios-node-build 上游链路、vue-jest（与 vue 2 + jest 26 紧耦合）、jest-vue-preprocessor。high 大头是 webpack-dev-server 3.x（仅本地，非阻塞）、imagemin-svgo（alpheios-node-build peer dep）、`copy-webpack-plugin` 6.x（升 11 是 webpack 5 API 大改）。
+
+**这些都需要先升级 / 解耦 alpheios-node-build 才有解**，符合决策 2「下一大版本统一处理工具链」。
+
+---
+
+## 第一轮（2026-05-04 P2 收尾批次）— 原始记录
+
+
 
 ### 移除（验证通过后从 `package.json` 删除）
 
@@ -55,7 +142,7 @@ peer-deps，需要在升级或裁剪时**先 build 一次**确认。
 
 ---
 
-## 验证结果（2026-05-04）
+## 验证结果（2026-05-04 第一轮）
 
 - `npm install --legacy-peer-deps` ：成功，`removed 1 package, changed 2 packages`。
 - `npm run build-dev` ：成功，webpack 产出 `dist/background.js` / `dist/content.js`。
@@ -66,9 +153,11 @@ peer-deps，需要在升级或裁剪时**先 build 一次**确认。
 
 ---
 
-## npm audit 基线
+## npm audit 基线（第一轮快照，仅作历史对比）
 
-`npm audit --json` 于 2026-05-04 采集，metadata：
+> Tier 2+3 之后的当前状态见上方「Tier 1+2+3 累计成果」表。本节保留作差异对照。
+
+`npm audit --json` 于 2026-05-04 第一轮采集，metadata：
 
 | severity | 数量（含传递） |
 |---|---|
@@ -118,8 +207,24 @@ peer-deps，需要在升级或裁剪时**先 build 一次**确认。
 | 来源 | 告警 | 处置原因 |
 |---|---|---|
 | `uuid@3.4.0`（多个传递依赖引入） | `uuid@10 and below is no longer supported` | 是多个老 webpack 4 时代包的传递依赖；只能等上游升级。`uuid` 直接依赖在我们这是 ^8.3.1，不直接受影响。 |
-| `npm warn gitignore-fallback`（仅 cmd.exe / npm 11 出现） | `No .npmignore file found, using .gitignore` | npm 11 新提示，仅出现在我们用 `cmd.exe` 跑 install 时；不影响构建。可在后续 PR 增加空 `.npmignore` 消除。 |
-| `Browserslist: caniuse-lite is outdated` | npm run lint 时打印 | 跑 `npx browserslist@latest --update-db` 即可；噪声而非错误，不阻塞构建。 |
+
+> **2026-05-04 Tier 1 已消除**：`npm warn gitignore-fallback`（加空 `.npmignore`）；`Browserslist: caniuse-lite is outdated`（手动升级 caniuse-lite）。两条不再出现在当前 install / lint 输出中。
+
+`npm audit fix` Tier 2 之后新增的传递 deprecation 告警（首次 audit fix 安装会报，后续仅在 fresh install 时打印）：
+
+| 包 | 告警 |
+|---|---|
+| `rimraf@3.0.2` | Rimraf versions prior to v4 are no longer supported |
+| `glob@7.2.3` | Old versions of glob are not supported |
+| `@humanwhocodes/config-array@0.5.0` | Use @eslint/config-array instead |
+| `@humanwhocodes/object-schema@1.2.1` | Use @eslint/object-schema instead |
+| `tar@6.2.1` | Old versions of tar are not supported |
+| `uuid@8.3.2` | uuid@10 and below is no longer supported |
+| `vue@2.7.16` | Vue 2 has reached EOL |
+| `eslint@7.32.0` | This version is no longer supported |
+
+这些都是**传递性 deprecated**，与决策 2「下一大版本统一升级工具链」直接相关——
+要等 alpheios-node-build / vue 3 / jest 29 / eslint 9 一同推进。本仓不主动单升。
 
 > 当前 `package-lock.json` 中其他显式 `"deprecated":` 字段的包（如 `uuid@3.4.0` 等）
 > 多数是传递依赖，需要等上游 `alpheios-node-build`、`vue-jest`、webpack 4-era 工具升级才能根除。
@@ -128,17 +233,20 @@ peer-deps，需要在升级或裁剪时**先 build 一次**确认。
 
 ## 后续 PR 处理顺序建议
 
-1. **第一优先：critical/high 中的非 alpheios-node-build 项**
-   - `webpack` 升到 5.97+
-   - `webpack-bundle-analyzer` 升到 4.x
-   - `webpack-dev-server` 升到 5.x（仅本地，影响小）
-   - `jsonwebtoken` 升到 9.x
-   - `copy-webpack-plugin` 升到 11.x（注意 API 变化）
-   - 每升 1-2 个跑全套 verify。
-2. **第二优先：与 alpheios-node-build 解耦**
-   - 决策 2 后续路线 C：把 alpheios-node-build 升级或替换。这能解锁 webpack-cleanup-plugin / imagemin* / vue-svg-loader 一整批 peer deps 的升级路径。
-3. **moderate/low：仅在版本号许可时随手升**
-4. **vue 2 → vue 3**：跨大版本，等 alpheios-core 准备好再做；暂不规划。
+> Tier 1+2+3 完成后剩余 4 个 critical / 46 个 high。下面顺序按"影响面 × 风险"重排。
+
+1. **第一优先：升级 / 替换 alpheios-node-build**
+   - 这是 critical 与多数 high 的共同上游。一旦推进，`webpack-cleanup-plugin` / `imagemin*` / `vue-svg-loader` 一整批 peer deps 才有升级路径。
+   - 决策 2 后续路线 C 的核心。
+2. **第二优先：webpack-dev-server 3 → 5**
+   - 仅本地 dev 工具，不影响 production bundle。新增 4.x/5.x 的破坏性变更主要在配置 API（`https`、`hot`、`overlay` 等），需要重写本仓的 dev 启动脚本（如果有）。
+3. **第三优先：copy-webpack-plugin 6 → 11**
+   - webpack 5 API 已升，跨主版本主要影响 `patterns` 配置形式，在 `build/config.mjs` 单点修改即可。
+4. **第四优先（与上游同步）：vue 2 → 3 + vue-jest / jest-vue-preprocessor**
+   - 跨大版本，等 alpheios-core 准备好再做；暂不规划。
+5. **第五优先（与上游同步）：jest 26 → 29、eslint 7 → 9**
+   - jest 升级触发 `babel-jest` 与 `jest-vue-preprocessor` 适配；eslint 升级触发 `eslint-config-standard` 升 v17+。一并改造。
+6. **moderate/low**：仅在版本号许可时随手升。
 
 ---
 

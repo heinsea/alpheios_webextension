@@ -74,7 +74,17 @@ Chrome / Firefox / Safari distribution paths working.
   88 moderate / 10 low; 28 of those at `package.json` direct level), the
   unavoidable deprecation warnings (e.g. transitive `uuid@3.4.0`), and a
   recommended ordering for the follow-up audit-fix PR. Cross-references
-  `MIGRATION-CHECKLIST.md` P2 and `PENDING-DECISIONS.md`.
+  `MIGRATION-CHECKLIST.md` P2 and `PENDING-DECISIONS.md`. Subsequently
+  expanded with a "second round" section recording the 2026-05-04 follow-up
+  (Tier 1+2+3): final audit baseline `135 total` (down -57 / -30%; critical
+  22 → 4, high 72 → 46), the install warnings cleared by Tier 1, the
+  transitive upgrades from `npm audit fix`, and the direct-dep major bumps
+  for `jsonwebtoken` and `webpack-bundle-analyzer`.
+- Empty `.npmignore` (Tier 1, 2026-05-04 follow-up). Silences the
+  `npm warn gitignore-fallback` that npm 11 emits on installs in this
+  repo. The package is private (not published to the npm registry), so
+  there's nothing to specifically exclude — a comment-only file does the
+  job.
 
 ### Fixed
 - **Context menu duplicate-id error**: In MV3, the background service worker
@@ -113,6 +123,22 @@ Chrome / Firefox / Safari distribution paths working.
   removed `eslint-plugin-standard` was implicitly providing the
   `browser` global; without an explicit env declaration, every `browser.*`
   call in the background script triggered `'browser' is not defined`.
+- **Direct-dependency major bumps (Tier 3, 2026-05-04 follow-up)**:
+  - `jsonwebtoken` `^8.5.1` → `^9.0.2` (installed 9.0.3). The repo's only
+    use is `jwt.decode(accessToken)` in `src/content/content-safari.js:310`,
+    and `decode` is unchanged across the 8→9 boundary; the breaking changes
+    in 9.x are scoped to `sign` / `verify`. Closes the upstream dependabot
+    PR #351 idea.
+  - `webpack-bundle-analyzer` `^3.9.0` → `^4.10.2`. CLI tool only, no source
+    imports, so the 4.x ESM rewrite has no impact on this repo's pipeline.
+- **Transitive upgrades captured in `package-lock.json` (Tier 2, 2026-05-04
+  follow-up, `npm audit fix` without --force)**: `+124 / -196 / changed 273`
+  packages in one round. Direct-dep installed versions advanced inside
+  their existing caret ranges: `webpack` 5.4 → 5.106.2, `terser` 5.3 →
+  5.46.2, `vue` 2.6 → 2.7.16 (final 2.x, EOL), `eslint` 7.12 → 7.32.0
+  (final 7.x), `copy-webpack-plugin` 6.3 → 6.4.1. `package.json` declared
+  ranges intentionally left untouched — the caret already includes the new
+  versions, and `package-lock.json` is the single source of truth.
 - Documentation refreshed:
   - `README.md` — "Project Revival Status" rewritten to reflect that the
     MV3 shell migration has landed and to list remaining items

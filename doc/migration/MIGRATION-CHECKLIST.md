@@ -114,6 +114,13 @@
   - 验证 gate（全部通过）：`npm install --legacy-peer-deps` → `npm run build-dev` → `npm run verify:p0` → `npm run verify:worker-safe` → `npm test`（46 passed + 1 skipped）→ `npm run lint`（0 errors）。
   - npm audit 基线：192 vulnerabilities（22 critical / 72 high / 88 moderate / 10 low），其中 28 个直接依赖。完整数据与升级路线建议见 `DEPENDENCY-NOTES.md`「npm audit 基线」与「后续 PR 处理顺序建议」两节。**安全升级是独立 PR，不在本批次范围**。
   - 不可避免告警：`uuid@3.4.0` 通过传递依赖引入（多个 webpack 4 时代包）；`gitignore-fallback`（npm 11 新提示）；`Browserslist: caniuse-lite is outdated`（噪声）。三者均文档化，不阻塞构建。
+- **2026-05-04 后续：依赖清理 Tier 1+2+3**（在 P2 收尾批次之上继续推进，详见 `doc/migration/DEPENDENCY-NOTES.md`「第二轮」段）。
+  - **Tier 1（quick wins）**：新建空 `.npmignore` 消除 `npm warn gitignore-fallback`；手动升级 `caniuse-lite`（`browserslist@latest --update-db` 因内部缺 `--legacy-peer-deps` 失败）消除 lint 时的 `Browserslist outdated` 警告。两条 install warning 全清。
+  - **Tier 2（`npm audit fix` 非 --force）**：`added 124 / removed 196 / changed 273 packages`，自动把 `webpack` 5.4→5.106.2、`terser` 5.3→5.46.2、`vue` 2.6→2.7.16、`eslint` 7.12→7.32.0、`copy-webpack-plugin` 6.3→6.4.1 等推到各分支末端。declared range 未刷新（caret 已含新装版，纯装饰）。
+  - **Tier 3（部分）**：`jsonwebtoken` ^8.5.1 → ^9.0.2（仓库唯一调用 `jwt.decode` 在 9.x 完全兼容；`src/content/content-safari.js:310`）；`webpack-bundle-analyzer` ^3.9.0 → ^4.10.2（仅 CLI，零源码 import）。
+  - **累计成果**：漏洞 192 → 135（**-57，-30%**），critical 22 → 4（**-82%**），high 72 → 46。直接依赖中已彻底处理：`jsonwebtoken`、`webpack-bundle-analyzer`、`webpack` 系列 patch。
+  - **剩余 4 critical / 46 high 阻塞点**：alpheios-node-build 上游链路、vue-jest（vue 2 + jest 26 紧耦合）、webpack-dev-server 3.x（仅本地，可单独升 5.x）、imagemin-svgo（alpheios-node-build peer dep）、copy-webpack-plugin 6→11（webpack 5 API 大改）。这批需要先解耦 / 升级 alpheios-node-build 才有解，匹配决策 2「下一大版本统一处理工具链」。
+  - **验证 gate 全绿**（每个 Tier 都跑了一次完整链）：`build-dev` / `verify:p0` / `verify:worker-safe` / `npm test`（46 passed + 1 skipped）/ `npm run lint`（0 errors）。
 
 ---
 
