@@ -47,7 +47,7 @@ and Firefox. The build output is now Manifest V3 (service worker background,
 QA / release pipeline. A future toolchain swap (e.g. to Vite) is tracked in
 [`../migration/MIGRATION-CHECKLIST.md`](../migration/MIGRATION-CHECKLIST.md).
 
-If you only want to test UI behavior (including the new popup) and do not need
+If you only want to test UI behavior (including the toolbar action) and do not need
 login testing yet, you can skip setting a real Auth0 client id:
 
 ```
@@ -62,7 +62,7 @@ Optional test-mode auth config (for message flow validation without real Auth0 U
 npm run set-auth0 -- LOCAL_DEV_NO_AUTH LOCAL_DEV_NO_AUTH <TEST_ACCESS_TOKEN>
 ```
 
-## See It In Browser (Popup + Activation)
+## See It In Browser (Direct-Click Activation)
 
 **Chrome**
 1. Open `chrome://extensions`.
@@ -70,15 +70,15 @@ npm run set-auth0 -- LOCAL_DEV_NO_AUTH LOCAL_DEV_NO_AUTH <TEST_ACCESS_TOKEN>
 3. Click **Load unpacked** and select this repo's `dist` folder.
 4. Pin the extension and click its toolbar icon.
 5. Verify:
-   - New popup visual style is shown.
-   - `Activate` / `Deactivate` button toggles state.
-   - `Open Info Panel` is enabled once active.
+   - Click toggles Alpheios on/off (no popup is shown).
+   - Badge text shows `On` while active.
+   - Right-click on the toolbar icon → context menu offers `Activate / Deactivate / Open Info Panel`.
 
 **Firefox**
 1. Open `about:debugging#/runtime/this-firefox`.
 2. Click **Load Temporary Add-on...**.
 3. Select `dist/manifest.json`.
-4. Click the extension icon in toolbar and verify the same popup behavior.
+4. Click the extension icon in toolbar and verify the same direct-click toggle behavior.
 
 **3. Build Firefox and Chrome Package**
 ```

@@ -67,9 +67,10 @@ Then load `dist` as an unpacked extension:
 - Chrome: `chrome://extensions` -> Developer mode -> Load unpacked -> select `dist`
 - Firefox: `about:debugging#/runtime/this-firefox` -> Load Temporary Add-on -> select `dist/manifest.json`
 
-After loading, click the extension toolbar icon to see the new popup UI and test:
-- Activate/Deactivate toggle
-- Open Info Panel action (enabled when active)
+After loading, click the extension toolbar icon to toggle Alpheios on the
+current tab (no popup — the click goes straight to the background service
+worker, which activates or deactivates the content scripts). The right-click
+context menu still offers `Activate / Deactivate / Open Info Panel`.
 
 ## Development and Reviewer Build Instructions
 

@@ -27,8 +27,7 @@
   ],
   "action": {
     "default_icon": "icons/alpheios_black_32.png",
-    "default_title": "Activate Alpheios",
-    "default_popup": "popup.html"
+    "default_title": "Activate Alpheios"
   },
   "background": {
     "service_worker": "background.js"

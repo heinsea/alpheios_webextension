@@ -60,11 +60,11 @@ export default class BackgroundProcess {
     //   embeds Node polyfills (`setimmediate`, `vm-browserify`) which
     //   reference `document` / `window`. Loading it in an MV3 service
     //   worker throws `ReferenceError: document is not defined` inside an
-    //   async chain whose rejection nobody observed, so the popup hung on
-    //   "Please be patient...". `Auth0SwClient` is a SW-safe drop-in:
-    //   same constructor, `authenticate(options)`, `logout(options,
-    //   interactive)` surface, but only uses crypto.subtle / fetch /
-    //   chrome.identity.launchWebAuthFlow.
+    //   async chain whose rejection nobody observed, so the login flow
+    //   silently stalled at "Please be patient...". `Auth0SwClient` is a
+    //   SW-safe drop-in: same constructor, `authenticate(options)`,
+    //   `logout(options, interactive)` surface, but only uses
+    //   crypto.subtle / fetch / chrome.identity.launchWebAuthFlow.
     return Auth0SwClient
   }
 
@@ -79,7 +79,6 @@ export default class BackgroundProcess {
     this.messagingService.addHandler(Message.types.ENDPOINTS_REQUEST, this.endpointsRequestHandler, this)
     this.messagingService.addHandler(Message.types.USER_DATA_REQUEST, this.userDataRequestHandler, this)
     browser.runtime.onMessage.addListener(this.messagingService.listener.bind(this.messagingService))
-    browser.runtime.onMessage.addListener(this.popupMessageListener.bind(this))
     browser.tabs.onActivated.addListener(this.tabActivationListener.bind(this))
     browser.tabs.onDetached.addListener(this.tabDetachedListener.bind(this))
     browser.tabs.onAttached.addListener(this.tabAttachedListener.bind(this))
@@ -109,90 +108,6 @@ export default class BackgroundProcess {
 
     browser.contextMenus.onClicked.addListener(this.menuListener.bind(this))
     this.browserAction.onClicked.addListener(this.browserActionListener.bind(this))
-  }
-
-  async popupMessageListener (message) {
-    if (!message || message.source !== 'alpheios-popup') {
-      return false
-    }
-
-    try {
-      if (message.command === 'get-status') {
-        return await this.getPopupStatus()
-      }
-
-      const activeTab = await this.getActiveTabObject()
-      if (!activeTab) {
-        const error = 'No active tab found'
-        console.warn(`[alpheios-bg] popup "${message.command}" failed: ${error}`)
-        return { ok: false, error }
-      }
-
-      if (message.command === 'toggle') {
-        const trackedTab = this.tabs.get(activeTab.uniqueId)
-        if (trackedTab && trackedTab.isActive()) {
-          await this.deactivateContent(activeTab)
-        } else {
-          await this.activateContent(activeTab)
-        }
-        return await this.getPopupStatus()
-      }
-
-      if (message.command === 'open-info') {
-        await this.openInfoTab(activeTab)
-        return await this.getPopupStatus()
-      }
-
-      const error = `Unsupported popup command: ${message.command}`
-      console.warn(`[alpheios-bg] ${error}`)
-      return { ok: false, error }
-    } catch (error) {
-      // Without this catch, an exception inside an async listener becomes an
-      // unhandled rejection that the popup never sees as a structured response.
-      console.error(`[alpheios-bg] popup "${message.command}" threw:`, error)
-      return { ok: false, error: error && error.message ? error.message : String(error) }
-    }
-  }
-
-  async getPopupStatus () {
-    const browserTab = await this.getActiveBrowserTab()
-    if (!browserTab || typeof browserTab.id !== 'number') {
-      return { ok: false, error: 'No active browser tab found' }
-    }
-
-    const tabObj = new Tab(browserTab.id, browserTab.windowId)
-    const trackedTab = this.tabs.get(tabObj.uniqueId)
-    const isActive = Boolean(trackedTab && trackedTab.isActive() && !trackedTab.isEmbedLibActive() && !trackedTab.isDisabled())
-    const isEmbedded = Boolean(trackedTab && trackedTab.isEmbedLibActive())
-    const isDisabled = Boolean(trackedTab && trackedTab.isDisabled())
-    const panelOpen = Boolean(trackedTab && trackedTab.isPanelOpen())
-    const supportedUrl = BackgroundProcess.isSupportedTabUrl(browserTab.url)
-
-    return {
-      ok: true,
-      status: {
-        isActive,
-        isEmbedded,
-        isDisabled,
-        panelOpen,
-        supportedUrl,
-        title: browserTab.title || '',
-        tabId: browserTab.id
-      }
-    }
-  }
-
-  async getActiveBrowserTab () {
-    const tabs = await browser.tabs.query({ active: true, currentWindow: true })
-    return tabs && tabs.length > 0 ? tabs[0] : null
-  }
-
-  async getActiveTabObject () {
-    const activeBrowserTab = await this.getActiveBrowserTab()
-    if (!activeBrowserTab || typeof activeBrowserTab.id !== 'number') {
-      return null
-    }
-    return new Tab(activeBrowserTab.id, activeBrowserTab.windowId)
   }
 
   updateIcon (active, tabId) {
