@@ -2,18 +2,21 @@
 
 ## Modernization Context
 
-The primary historical blocker for this repository is
+The historical blocker for this repository was
 [issue #324](https://github.com/alpheios-project/webextension/issues/324),
-which tracks migration to Manifest V3 for Chrome and Firefox.
+which tracked migration to Manifest V3 for Chrome and Firefox.
 
-The codebase currently uses multiple Manifest V2-only APIs and patterns:
-- `browser_action`
-- `tabs.executeScript`
-- `tabs.insertCSS`
-- background page script model
+That migration has now landed at the shell level. The codebase no longer uses
+the deprecated MV2 APIs:
 
-Modernization work should prioritize adapter-based refactors so behavior remains
-stable while API usage is migrated incrementally.
+- `browser_action` → `action`
+- `tabs.executeScript` → `browser.scripting.executeScript`
+- `tabs.insertCSS` → `browser.scripting.insertCSS`
+- persistent background page → `service_worker`
+
+Remaining modernization work (toolchain, cross-browser packaging strategy,
+end-to-end Auth0 verification, integration tests) is tracked in
+[`../migration/MIGRATION-CHECKLIST.md`](../migration/MIGRATION-CHECKLIST.md).
 
 ## Authentication
 The Webextension uses Auth0 for Authentication. In order for Authentication to work,

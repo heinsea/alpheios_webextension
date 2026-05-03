@@ -1,11 +1,12 @@
 import Browser from '../lib/browser'
 import Process from './background-process'
 
-// Detect browser features
+// Detect browser features. In MV3 the `browser` namespace is provided by the
+// webextension-polyfill bundle, but we keep feature detection here so this
+// background entry can still recover gracefully on unusual environments
+// (older Firefox temporary loads or non-polyfilled Chromiums).
 const browserFeatures = new Browser().inspect().getFeatures()
-console.log(`Support of a "browser" namespace: ${browserFeatures.browserNamespace}`)
 if (!browserFeatures.browserNamespace) {
-  console.log('"browser" namespace is not supported, will load a WebExtensions polyfill into the background script')
   try {
     globalThis.browser = require('webextension-polyfill')
   } catch (error) {

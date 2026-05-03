@@ -1,10 +1,22 @@
 (function () {
   const extApi = window.browser || window.chrome
+  const LOG_PREFIX = '[alpheios-popup]'
   const ui = {
     title: document.getElementById('status-title'),
     text: document.getElementById('status-text'),
     toggleBtn: document.getElementById('toggle-btn'),
     infoBtn: document.getElementById('info-btn')
+  }
+
+  function logWarn (label, error) {
+    // Errors that surface in the popup UI should also leave a trace in the
+    // popup devtools console. Without this, anything that fails between the
+    // popup and the background service worker is invisible to the developer.
+    if (error && error.stack) {
+      console.warn(`${LOG_PREFIX} ${label}:`, error.message, error.stack)
+    } else {
+      console.warn(`${LOG_PREFIX} ${label}:`, error)
+    }
   }
 
   function setLoading (isLoading) {
@@ -88,11 +100,14 @@
     try {
       const response = await sendMessage({ source: 'alpheios-popup', command: 'get-status' })
       if (!response || !response.ok || !response.status) {
-        setErrorState(response && response.error ? response.error : 'Background status is unavailable.')
+        const reason = response && response.error ? response.error : 'Background status is unavailable.'
+        logWarn('get-status returned non-ok response', { response, reason })
+        setErrorState(reason)
         return
       }
       setStatusState(response.status)
     } catch (error) {
+      logWarn('get-status threw', error)
       setErrorState(error.message)
     } finally {
       setLoading(false)
@@ -104,11 +119,14 @@
     try {
       const response = await sendMessage({ source: 'alpheios-popup', command })
       if (!response || !response.ok || !response.status) {
-        setErrorState(response && response.error ? response.error : 'Action failed.')
+        const reason = response && response.error ? response.error : 'Action failed.'
+        logWarn(`command "${command}" returned non-ok response`, { response, reason })
+        setErrorState(reason)
         return
       }
       setStatusState(response.status)
     } catch (error) {
+      logWarn(`command "${command}" threw`, error)
       setErrorState(error.message)
     } finally {
       setLoading(false)

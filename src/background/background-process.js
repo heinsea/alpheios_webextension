@@ -12,6 +12,9 @@ import AuthError from '../lib/auth/errors/auth-error.js'
 import ContextMenuItem from './context-menu-item.js'
 import ContentMenuSeparator from './context-menu-separator.js'
 import auth0Env from '../env/env-webext-config.js'
+import { isSupportedTabUrl } from '../lib/url-support.js'
+import { decideLoginPath } from '../lib/auth/login-path.js'
+import Auth0SwClient from '../lib/auth/auth0-sw-client.js'
 
 // Use a logger that outputs timestamps (but loses line numbers)
 // import Logger from '../lib/logger'
@@ -26,7 +29,8 @@ export default class BackgroundProcess {
     this.tab = undefined // A tab that is currently active in a browser window
 
     this.messagingService = new MessagingService()
-    this.browserAction = browser.action || browser.browserAction
+    // MV3: `browser.action` is the only available API (browserAction was removed).
+    this.browserAction = browser.action
 
     this.browserIcons = {
       active: {
@@ -51,12 +55,17 @@ export default class BackgroundProcess {
   }
 
   async getAuthClientClass () {
-    if (this.authClientClass) {
-      return this.authClientClass
-    }
-    const authModule = await import('auth0-chrome')
-    this.authClientClass = authModule.default || authModule
-    return this.authClientClass
+    // Why we no longer use the `auth0-chrome` npm package:
+    //   Its published `dist/auth0chrome.js` is a webpack-4 bundle that
+    //   embeds Node polyfills (`setimmediate`, `vm-browserify`) which
+    //   reference `document` / `window`. Loading it in an MV3 service
+    //   worker throws `ReferenceError: document is not defined` inside an
+    //   async chain whose rejection nobody observed, so the popup hung on
+    //   "Please be patient...". `Auth0SwClient` is a SW-safe drop-in:
+    //   same constructor, `authenticate(options)`, `logout(options,
+    //   interactive)` surface, but only uses crypto.subtle / fetch /
+    //   chrome.identity.launchWebAuthFlow.
+    return Auth0SwClient
   }
 
   initialize () {
@@ -80,6 +89,15 @@ export default class BackgroundProcess {
     browser.runtime.onUpdateAvailable.addListener(this.updateAvailableListener.bind(this))
     browser.runtime.onInstalled.addListener(this.handleOnInstalled.bind(this))
 
+    // In an MV3 service worker, `initialize()` may be called multiple times
+    // across worker restarts. The previous context menu items persist across
+    // worker lifetimes, so we must remove them before creating new ones with
+    // the same IDs. Otherwise Chrome logs:
+    //   Unchecked runtime.lastError: Cannot create item with duplicate id ...
+    browser.contextMenus.removeAll().catch(() => {
+      // On first install there may be nothing to remove; suppress.
+    })
+
     this.menuItems = {
       activate: new ContextMenuItem(BackgroundProcess.defaults.activateMenuItemId, BackgroundProcess.defaults.activateMenuItemText),
       deactivate: new ContextMenuItem(BackgroundProcess.defaults.deactivateMenuItemId, BackgroundProcess.defaults.deactivateMenuItemText),
@@ -98,31 +116,42 @@ export default class BackgroundProcess {
       return false
     }
 
-    if (message.command === 'get-status') {
-      return this.getPopupStatus()
-    }
-
-    const activeTab = await this.getActiveTabObject()
-    if (!activeTab) {
-      return { ok: false, error: 'No active tab found' }
-    }
-
-    if (message.command === 'toggle') {
-      const trackedTab = this.tabs.get(activeTab.uniqueId)
-      if (trackedTab && trackedTab.isActive()) {
-        await this.deactivateContent(activeTab)
-      } else {
-        await this.activateContent(activeTab)
+    try {
+      if (message.command === 'get-status') {
+        return await this.getPopupStatus()
       }
-      return this.getPopupStatus()
-    }
 
-    if (message.command === 'open-info') {
-      await this.openInfoTab(activeTab)
-      return this.getPopupStatus()
-    }
+      const activeTab = await this.getActiveTabObject()
+      if (!activeTab) {
+        const error = 'No active tab found'
+        console.warn(`[alpheios-bg] popup "${message.command}" failed: ${error}`)
+        return { ok: false, error }
+      }
 
-    return { ok: false, error: `Unsupported popup command: ${message.command}` }
+      if (message.command === 'toggle') {
+        const trackedTab = this.tabs.get(activeTab.uniqueId)
+        if (trackedTab && trackedTab.isActive()) {
+          await this.deactivateContent(activeTab)
+        } else {
+          await this.activateContent(activeTab)
+        }
+        return await this.getPopupStatus()
+      }
+
+      if (message.command === 'open-info') {
+        await this.openInfoTab(activeTab)
+        return await this.getPopupStatus()
+      }
+
+      const error = `Unsupported popup command: ${message.command}`
+      console.warn(`[alpheios-bg] ${error}`)
+      return { ok: false, error }
+    } catch (error) {
+      // Without this catch, an exception inside an async listener becomes an
+      // unhandled rejection that the popup never sees as a structured response.
+      console.error(`[alpheios-bg] popup "${message.command}" threw:`, error)
+      return { ok: false, error: error && error.message ? error.message : String(error) }
+    }
   }
 
   async getPopupStatus () {
@@ -280,51 +309,43 @@ export default class BackgroundProcess {
 
   static async executeScript (tabId, details = {}) {
     try {
-      if (browser.scripting) {
-        if (details.file) {
-          await browser.scripting.executeScript({
-            target: { tabId },
-            files: [details.file]
-          })
-          return
-        }
-        if (details.code) {
-          const matchedEvent = details.code.match(/new Event\('([^']+)'\)/)
-          if (matchedEvent && matchedEvent[1]) {
-            await BackgroundProcess.dispatchEvent(tabId, matchedEvent[1])
-          }
-        }
+      // MV3: `browser.tabs.executeScript` was removed; only `browser.scripting` is available.
+      if (details.file) {
+        await browser.scripting.executeScript({
+          target: { tabId },
+          files: [details.file]
+        })
         return
       }
-      await browser.tabs.executeScript(tabId, details)
+      if (details.code) {
+        const matchedEvent = details.code.match(/new Event\('([^']+)'\)/)
+        if (matchedEvent && matchedEvent[1]) {
+          await BackgroundProcess.dispatchEvent(tabId, matchedEvent[1])
+        }
+      }
     } catch (e) {
       /*
-      Each browser has a set of pages on which `tab.executeScript()` is not allowed to run.
-      These could be extension pages or sites such as Play Store.
+      Each browser has a set of pages on which `scripting.executeScript()` is not allowed
+      to run (e.g. browser-internal pages, Chrome Web Store, restricted host pages).
       It is impossible to check if the script is allowed to run before running it.
       The only way to figure this out is to actually run the script.
       As a result, some scripts will fail to run, and, because of this,
-      it can be expected for `tabs.executeScript()` to fail from time to time.
+      it can be expected for `executeScript()` to fail from time to time.
       So we will do nothing about it other than quietly catching an error here.
        */
     }
   }
 
   static async dispatchEvent (tabId, eventName) {
-    if (browser.scripting) {
-      await browser.scripting.executeScript({
-        target: { tabId },
-        func: (name) => {
-          if (document.body) {
-            document.body.dispatchEvent(new Event(name))
-          }
-        },
-        args: [eventName]
-      })
-      return
-    }
-    await browser.tabs.executeScript(tabId, {
-      code: `document.body.dispatchEvent(new Event('${eventName}'))`
+    // MV3: `tabs.executeScript` is gone; use the function-injection form of `scripting`.
+    await browser.scripting.executeScript({
+      target: { tabId },
+      func: (name) => {
+        if (document.body) {
+          document.body.dispatchEvent(new Event(name))
+        }
+      },
+      args: [eventName]
     })
   }
 
@@ -345,14 +366,10 @@ export default class BackgroundProcess {
   }
 
   loadContentCSS (tabId, fileName) {
-    if (browser.scripting) {
-      return browser.scripting.insertCSS({
-        target: { tabId },
-        files: [fileName]
-      })
-    }
-    return browser.tabs.insertCSS(tabId, {
-      file: fileName
+    // MV3: `browser.tabs.insertCSS` was removed; use `browser.scripting.insertCSS`.
+    return browser.scripting.insertCSS({
+      target: { tabId },
+      files: [fileName]
     })
   }
 
@@ -492,22 +509,29 @@ export default class BackgroundProcess {
     //  - required if requesting the offline_access scope.
 
     const options = {
-      audience: auth0Env.AUDIENCE,
       scope: 'openid profile offline_access',
       device: 'chrome-extension',
       prompt: 'select_account'
     }
+    // `audience` identifies the Auth0 API this token is for. It only makes
+    // sense when the Auth0 tenant has a matching API registered. When
+    // testing against a personal Auth0 tenant (see
+    // doc/testing/P1-AUTH-SMOKE-STEPS.md appendix A), leave AUDIENCE empty
+    // in your env config to skip it entirely.
+    if (auth0Env.AUDIENCE) {
+      options.audience = auth0Env.AUDIENCE
+    }
 
-    // Test/dev environment only
-    if (auth0Env.TEST_ID) {
-      this.authResult = {
-        access_token: auth0Env.TEST_ID,
-        is_test_user: true
-      }
-      this.authData.setAuthStatus(true).setSessionDuration(3600000 /* One hour */)
-      this.messagingService.sendResponseToTab(LoginResponse.Success(request, this.authData.serializable()), sender.tab.id)
-        .catch(error => console.error(`Unable to send a response to a login request: ${error.message}`))
-    } else {
+    // The path decision lives in `src/lib/auth/login-path.js` so the
+    // priority rule (real Client ID > TEST_ID fallback > missing config)
+    // can be unit-tested without booting the whole BackgroundProcess.
+    const path = decideLoginPath(auth0Env)
+
+    if (path === 'real') {
+      // Real Auth0 path. A leftover TEST_ID from a previous test-mode
+      // build (e.g. 'mock-token') used to short-circuit this branch and
+      // silently log the user in as the mock user; that bug is what
+      // `decideLoginPath` exists to prevent regressing.
       const Auth0ChromeClass = await this.getAuthClientClass()
       new Auth0ChromeClass(auth0Env.AUTH0_DOMAIN, auth0Env.AUTH0_CLIENT_ID)
         .authenticate(options)
@@ -529,10 +553,41 @@ export default class BackgroundProcess {
           this.messagingService.sendResponseToTab(LoginResponse.Error(request, new AuthError(err.message)), sender.tab.id)
             .catch(error => console.error(`Unable to send an error response to a login request: ${error.message}`))
         })
+    } else if (path === 'mock') {
+      // Test/dev fallback — only kicks in when no real Client ID is configured.
+      this.authResult = {
+        access_token: auth0Env.TEST_ID,
+        is_test_user: true
+      }
+      this.authData.setAuthStatus(true).setSessionDuration(3600000 /* One hour */)
+      this.messagingService.sendResponseToTab(LoginResponse.Success(request, this.authData.serializable()), sender.tab.id)
+        .catch(error => console.error(`Unable to send a response to a login request: ${error.message}`))
+    } else {
+      this.messagingService.sendResponseToTab(
+        LoginResponse.Error(request, new AuthError('AUTH0_CLIENT_ID is not configured. Run: npm run set-auth0 -- <AUTH0_CLIENT_ID>')),
+        sender.tab.id
+      ).catch(error => console.error(`Unable to send an error response to a login request: ${error.message}`))
     }
   }
 
   sessionRequestHandler (request, sender) {
+    if (!this.authResult) {
+      this.messagingService.sendResponseToTab(
+        UserSessionResponse.Error(request, new AuthError('Not Authenticated')),
+        sender.tab.id
+      ).catch(error => console.error(`Unable to send an error response to a user session request: ${error.message}`))
+      return
+    }
+
+    if (this.authResult.is_test_user) {
+      this.authData.userId = 'dev|mockUserId'
+      this.authData.userName = 'Alpheios Test User'
+      this.authData.userNickname = 'testuser'
+      this.messagingService.sendResponseToTab(UserSessionResponse.Success(request, this.authData.serializable()), sender.tab.id)
+        .catch(error => console.error(`Unable to send a response to a user session request: ${error.message}`))
+      return
+    }
+
     if (this.authResult && !this.authResult.is_test_user) {
       fetch(`https://${auth0Env.AUTH0_DOMAIN}/userinfo`, {
         headers: {
@@ -640,6 +695,14 @@ export default class BackgroundProcess {
    * @param {Object} sender - A sender object
    */
   async logoutRequestHandler (request, sender) {
+    if (!this.authResult || this.authResult.is_test_user) {
+      this.authResult = null
+      this.authData = new AuthData()
+      this.messagingService.sendResponseToTab(LogoutResponse.Success(request), sender.tab.id)
+        .catch(error => console.error(`Unable to send a response to a logout request: ${error.message}`))
+      return
+    }
+
     const Auth0ChromeClass = await this.getAuthClientClass()
     new Auth0ChromeClass(auth0Env.AUTH0_DOMAIN, auth0Env.AUTH0_CLIENT_ID)
       .logout()
@@ -803,7 +866,9 @@ export default class BackgroundProcess {
   }
 
   static isSupportedTabUrl (url = '') {
-    return !/^(chrome|edge|about|moz-extension|chrome-extension|view-source):/i.test(url)
+    // Delegate to the shared helper so tests can verify the rule without
+    // importing the whole BackgroundProcess module.
+    return isSupportedTabUrl(url)
   }
 
   tabRemovalListener (tabID, removeInfo) {

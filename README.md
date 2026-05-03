@@ -10,28 +10,41 @@ library. The webextension wrapper code provides the implementation of the
 [WebExtensions API](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API) (Chrome/FF)
 and [App Extension API](https://developer.apple.com/documentation/safariservices/safari_app_extensions) (Safari).
 
-See also [DEVELOPMENT.md](doc/DEVELOPMENT.md).
+See also [DEVELOPMENT.md](doc/guides/DEVELOPMENT.md). A full documentation
+index is available at [doc/README.md](doc/README.md).
 
 ## Project Revival Status
 
-This extension has a long-lived blocker tracked in
-[issue #324](https://github.com/alpheios-project/webextension/issues/324):
-`upgrade to Manifest V3 (Chrome and FF)` (opened on October 26, 2021, currently open).
+The long-standing blocker tracked in
+[issue #324](https://github.com/alpheios-project/webextension/issues/324)
+(`upgrade to Manifest V3 (Chrome and FF)`) is now resolved at the manifest and
+background-shell layer:
 
-Current code is still based on Manifest V2 APIs (for example `browser_action` and
-`tabs.executeScript`), which is the main reason maintenance became difficult.
+- `manifest_version` is `3`
+- the background page has been replaced with a `service_worker`
+- `browser_action` / `tabs.executeScript` / `tabs.insertCSS` have been replaced
+  with `action` / `browser.scripting.executeScript` / `browser.scripting.insertCSS`
+- host access has been moved into `host_permissions`
+- `web_accessible_resources` uses the MV3 object form
 
-To restart active support, the project is being modernized in phases:
+A Firefox-specific gecko ID (`browser_specific_settings`) is set so
+temporary loads in Firefox keep working with `storage.local` / `storage.sync`.
 
-1. Restore maintainability and simplify local development.
-2. Modernize extension shell UI (popup and control surface).
-3. Migrate runtime architecture toward Manifest V3-compatible APIs.
-4. Keep Firefox support aligned while maintaining Safari integration.
+The P1 authentication message-chain has been verified end-to-end in test
+mode (`TEST_ID` / `LOCAL_DEV_NO_AUTH`) on 2026-05-03; the extension is
+fully usable for local development. The cross-browser strategy decision
+(single MV3 manifest for both Chrome and Firefox 115+) was taken on the
+same date — see `doc/migration/PENDING-DECISIONS.md`.
 
-The new popup control UI is now included and provides:
-- Active tab status visibility
-- One-click activate/deactivate
-- Quick open of the info panel
+The remaining migration work (still tracked in `doc/migration/MIGRATION-CHECKLIST.md`)
+focuses on:
+
+1. End-to-end Auth0 verification with **real credentials** (the message
+   layer is already verified; this remaining step exercises the real
+   OAuth UI and `/userinfo` paths).
+2. Firefox 115+ smoke parity check.
+3. Optional follow-ups: build-toolchain modernization (Webpack → Vite),
+   richer integration tests, and changelog/release docs.
 
 ## Quick Local Preview
 
@@ -60,7 +73,7 @@ After loading, click the extension toolbar icon to see the new popup UI and test
 
 ## Development and Reviewer Build Instructions
 
-See [BUILD-FF-CHROME.md](doc/BUILD-FF-CHROME.md) and [BUILD-SAFARI.md](doc/BUILD-SAFARI.md).
+See [BUILD-FF-CHROME.md](doc/guides/BUILD-FF-CHROME.md) and [BUILD-SAFARI.md](doc/guides/BUILD-SAFARI.md).
 
 ## QA Build Instructions
 
@@ -71,7 +84,7 @@ build the distribution files, and tag a pre-release in GitHub, with the dist fil
 packaged as a release artifact.
 3. In the Safari build environment, pull the `qa` branch  and extract
 the `dist.zip` from the Pre-release in GitHub to the local `dist` directory.
-4. Create the Safari Package as described in `doc/BUILD-SAFARI.md`
+4. Create the Safari Package as described in `doc/guides/BUILD-SAFARI.md`
 
 ### Production Version and Build Instructions
 
@@ -84,7 +97,7 @@ build the distribution files, and tag a pre-release in GitHub, with the dist fil
 packaged as a release artifact.
 5. In the Safari build environment, pull the `production` branch  and extract
 the `dist.zip` from the Pre-release in GitHub to the local `dist` directory.
-6. Create the Safari Package as described in `doc/BUILD-SAFARI.md`
+6. Create the Safari Package as described in `doc/guides/BUILD-SAFARI.md`
 7. When ready to release the code remove the "Pre-release" flag from the
 Release in GitHub.
 8. Merge the version and any other code changes from `production` back to `master`

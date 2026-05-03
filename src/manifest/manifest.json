@@ -33,6 +33,12 @@
   "background": {
     "service_worker": "background.js"
   },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "alpheios@alpheios.net",
+      "strict_min_version": "115.0"
+    }
+  },
   "web_accessible_resources": [{
     "resources": [
       "style/*",

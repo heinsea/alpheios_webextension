@@ -50,3 +50,4 @@ xcuserdata
 
 ## Safari Auth0 env
 src/lib/auth/env-safari-app-ext.js
+doc/testing/P1-AUTH-SMOKE-STEPS.md
