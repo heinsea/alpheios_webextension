@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Alpheios — Popup States</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Lato:ital,wght@0,400;0,700;1,400&family=Material+Symbols+Outlined:opsz,wght,FILL@20,400,0..1&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --surface: #f9f9fb;
+    --surface-container-lowest: #ffffff;
+    --surface-container-low: #f3f3f5;
+    --surface-container: #edeef0;
+    --surface-container-high: #e8e8ea;
+    --on-surface: #1a1c1d;
+    --on-surface-variant: #4c4546;
+    --glass-surface: rgba(255, 255, 255, 0.65);
+    --glass-border: rgba(255, 255, 255, 0.6);
+    --glass-shadow: rgba(0, 0, 0, 0.1);
+    --primary: #000000;
+    --on-primary: #ffffff;
+    --secondary: #5e5e5e;
+    --secondary-container: #e1dfdf;
+    --on-secondary-container: #3a3a3a;
+    --tertiary: #0e6b4f;
+    --error: #ba1a1a;
+    --error-container: #ffdad6;
+    --on-error-container: #410002;
+    --outline: #7e7576;
+    --outline-variant: #cfc4c5;
+    --divider: rgba(0, 0, 0, 0.06);
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    color: var(--on-surface);
+    background: var(--surface);
+    font-size: 12px;
+    line-height: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .lang-classical { font-family: 'Lato', 'Noto Serif', serif; }
+
+  .page { max-width: 1280px; margin: 0 auto; padding: 32px; }
+  .page-title { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 4px; }
+  .page-sub { color: var(--on-surface-variant); margin: 0 0 32px; font-size: 13px; }
+  .breadcrumb { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--on-surface-variant); margin-bottom: 16px; }
+  .breadcrumb a { color: inherit; text-decoration: none; border-bottom: 1px solid var(--outline-variant); }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 32px;
+  }
+  @media (max-width: 980px) { .grid { grid-template-columns: 1fr; } }
+
+  .scene {
+    position: relative;
+    background: var(--surface-container-low);
+    border: 1px solid var(--outline-variant);
+    border-radius: 16px;
+    overflow: hidden;
+    height: 480px;
+    padding: 24px;
+  }
+  .scene-label {
+    position: absolute; top: 16px; left: 16px;
+    z-index: 30;
+    font-size: 10px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--on-surface-variant);
+    background: var(--surface-container-lowest);
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--outline-variant);
+  }
+
+  /* Mock page text inside scene */
+  .mock-text {
+    color: rgba(26, 28, 29, 0.55);
+    font-family: 'Lato', serif;
+    font-size: 14px;
+    line-height: 22px;
+    max-width: 420px;
+    margin-top: 56px;
+    margin-left: 24px;
+  }
+  .mock-text h2 { font-size: 22px; font-weight: 700; margin: 0 0 12px; color: rgba(26, 28, 29, 0.7); letter-spacing: -0.01em; }
+  .mock-text .selection {
+    background: rgba(0, 0, 0, 0.06);
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
+    border-radius: 2px;
+    color: rgba(26, 28, 29, 0.85);
+    padding: 0 1px;
+  }
+
+  /* Popup */
+  .popup {
+    position: absolute;
+    width: 360px;
+    border-radius: 12px;
+    background: var(--glass-surface);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid var(--glass-border);
+    box-shadow:
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.5),
+      0 12px 40px 0 var(--glass-shadow);
+    overflow: hidden;
+  }
+  .popup::before {
+    /* arrow */
+    content: '';
+    position: absolute;
+    top: -6px;
+    left: 64px;
+    width: 12px; height: 12px;
+    background: var(--glass-surface);
+    border-left: 1px solid var(--glass-border);
+    border-top: 1px solid var(--glass-border);
+    transform: rotate(45deg);
+  }
+
+  .popup-header {
+    display: flex; align-items: center;
+    padding: 8px 10px;
+    height: 36px;
+    border-bottom: 1px solid var(--divider);
+    background: rgba(255, 255, 255, 0.25);
+  }
+  .popup-brand {
+    width: 22px; height: 22px; border-radius: 6px;
+    background: var(--primary); color: var(--on-primary);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 10px; letter-spacing: -0.02em;
+    margin-right: 8px;
+  }
+  .popup-target {
+    font-size: 13px; font-weight: 600; letter-spacing: -0.01em;
+    flex: 1; min-width: 0;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .popup-actions { display: flex; gap: 4px; }
+  .icon-btn {
+    width: 24px; height: 24px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 6px; border: 0; background: transparent; cursor: pointer;
+    color: var(--on-surface-variant);
+  }
+  .icon-btn:hover { background: rgba(0, 0, 0, 0.06); color: var(--on-surface); }
+  .icon-btn .material-symbols-outlined { font-size: 16px; }
+
+  .popup-body { padding: 12px; }
+
+  .word-meta {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .pos-row {
+    display: flex; gap: 4px; flex-wrap: wrap;
+    margin-bottom: 12px;
+    align-items: center;
+  }
+  .pos-text {
+    font-size: 10px; font-weight: 500; letter-spacing: 0.05em;
+    text-transform: uppercase; color: var(--on-surface-variant);
+  }
+  .pos-text strong {
+    color: var(--on-surface);
+    font-weight: 600;
+  }
+  .lang-chip {
+    background: var(--secondary-container);
+    color: var(--on-secondary-container);
+    border-radius: 9999px;
+    padding: 2px 8px;
+    font-size: 10px; font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .verified-chip {
+    display: inline-flex; align-items: center; gap: 2px;
+    color: var(--tertiary);
+    font-size: 10px; font-weight: 500; letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .verified-chip .material-symbols-outlined { font-size: 12px; }
+
+  .def-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+  .def-row {
+    display: flex; gap: 8px;
+    padding: 6px 0;
+    border-top: 1px solid var(--divider);
+  }
+  .def-row:first-child { border-top: 0; padding-top: 0; }
+  .def-num {
+    font-size: 11px; font-weight: 500;
+    color: var(--on-surface-variant);
+    opacity: 0.6;
+    width: 16px; flex-shrink: 0;
+  }
+  .def-text {
+    font-size: 12px; line-height: 16px;
+    color: var(--on-surface);
+  }
+
+  .popup-footer {
+    display: flex; gap: 8px;
+    padding: 8px 10px;
+    border-top: 1px solid var(--divider);
+    background: rgba(255, 255, 255, 0.2);
+  }
+  .btn-primary {
+    flex: 1;
+    background: var(--primary);
+    color: var(--on-primary);
+    border: 0; border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 10px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase;
+    cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+  }
+  .btn-outline {
+    background: transparent;
+    color: var(--on-surface);
+    border: 1px solid var(--outline-variant);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 10px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase;
+    cursor: pointer;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .btn-outline .material-symbols-outlined { font-size: 14px; }
+
+  /* Indeterminate progress bar */
+  @keyframes indeterminate {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(400%); }
+  }
+  .progress-bar {
+    position: relative;
+    overflow: hidden;
+    height: 2px;
+    background: rgba(0, 0, 0, 0.06);
+  }
+  .progress-bar::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; height: 100%; width: 25%;
+    background: var(--primary);
+    animation: indeterminate 1.6s infinite ease-in-out;
+  }
+
+  /* Skeleton */
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  .skeleton {
+    background: linear-gradient(90deg, rgba(0,0,0,0.04) 0%, rgba(0,0,0,0.10) 50%, rgba(0,0,0,0.04) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.6s infinite;
+    border-radius: 4px;
+    height: 12px;
+  }
+
+  /* Empty / error illustration is text-only by design */
+  .empty-state {
+    text-align: center;
+    padding: 12px 8px 0;
+  }
+  .empty-state .empty-title {
+    font-size: 13px; font-weight: 600; letter-spacing: -0.01em;
+    color: var(--on-surface);
+    margin: 0 0 4px;
+  }
+  .empty-state .empty-desc {
+    font-size: 12px; line-height: 16px;
+    color: var(--on-surface-variant);
+    margin: 0 0 12px;
+  }
+  .empty-state .empty-link {
+    font-size: 11px; font-weight: 500;
+    color: var(--primary);
+    text-decoration: none;
+    border-bottom: 1px solid currentColor;
+  }
+
+  .error-banner {
+    display: flex; align-items: flex-start; gap: 8px;
+    background: var(--error-container);
+    color: var(--on-error-container);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 11px; line-height: 14px;
+    margin-bottom: 12px;
+  }
+  .error-banner .material-symbols-outlined {
+    font-size: 14px;
+    color: var(--error);
+    margin-top: 1px;
+  }
+  .error-banner strong { display: block; font-weight: 600; margin-bottom: 2px; }
+
+  .annotation {
+    margin-top: 12px;
+    padding: 12px;
+    background: var(--surface-container-lowest);
+    border: 1px solid var(--outline-variant);
+    border-radius: 8px;
+    font-size: 11px;
+    line-height: 16px;
+    color: var(--on-surface-variant);
+  }
+  .annotation strong { color: var(--on-surface); display: block; margin-bottom: 4px; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
+</style>
+</head>
+<body>
+  <main class="page">
+    <div class="breadcrumb"><a href="index.html">← All mockups</a></div>
+    <h1 class="page-title">Popup — 4 states</h1>
+    <p class="page-sub">用户在网页上选词后出现的轻量浮层。最多 360 × 480 px，紧贴选区，箭头指向 caret。</p>
+
+    <div class="grid">
+
+      <!-- =========== STATE 1: DEFAULT (success) =========== -->
+      <div>
+        <div class="scene">
+          <div class="scene-label">01 · Default — recognized word</div>
+          <div class="mock-text lang-classical">
+            <h2>Aeneis I.1</h2>
+            <p><span class="selection">Arma</span> virumque cano, Troiae qui primus ab oris Italiam, fato profugus, Laviniaque venit litora, multum ille et terris iactatus et alto…</p>
+          </div>
+          <div class="popup" style="top: 144px; left: 88px;">
+            <div class="popup-header">
+              <span class="popup-brand">Al</span>
+              <span class="popup-target lang-classical">arma</span>
+              <div class="popup-actions">
+                <button class="icon-btn" title="Expand to drawer"><span class="material-symbols-outlined">open_in_full</span></button>
+                <button class="icon-btn" title="Close"><span class="material-symbols-outlined">close</span></button>
+              </div>
+            </div>
+            <div class="popup-body">
+              <div class="word-meta">
+                <div class="pos-row">
+                  <span class="pos-text"><strong>NOUN</strong> · NEUTER · PLURAL</span>
+                </div>
+                <span class="lang-chip">Latin</span>
+              </div>
+              <div class="def-list">
+                <div class="def-row">
+                  <span class="def-num">1.</span>
+                  <span class="def-text">arms, weapons, armor — especially those of a warrior or soldier</span>
+                </div>
+                <div class="def-row">
+                  <span class="def-num">2.</span>
+                  <span class="def-text">war, battle, strife; military power or force</span>
+                </div>
+                <div class="def-row">
+                  <span class="def-num">3.</span>
+                  <span class="def-text">tools, implements, equipment (esp. for farming or nautical use)</span>
+                </div>
+              </div>
+              <div style="display:flex; align-items:center; gap:6px; margin-top:4px;">
+                <span class="verified-chip">
+                  <span class="material-symbols-outlined">check_circle</span>
+                  recognized
+                </span>
+              </div>
+            </div>
+            <div class="popup-footer">
+              <button class="btn-primary">
+                <span class="material-symbols-outlined" style="font-size:14px;">add</span>
+                Add to list
+              </button>
+              <button class="btn-outline" title="Expand to drawer">
+                <span class="material-symbols-outlined">open_in_full</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="annotation">
+          <strong>State · success</strong>
+          形态分解 + 短定义 + "Add to list / Expand"。最高频路径，应一屏内可读完。
+        </div>
+      </div>
+
+      <!-- =========== STATE 2: LOADING =========== -->
+      <div>
+        <div class="scene">
+          <div class="scene-label">02 · Loading — lexical request in progress</div>
+          <div class="mock-text lang-classical">
+            <h2>Aeneis I.1</h2>
+            <p>Arma virumque cano, <span class="selection">Troiae</span> qui primus ab oris Italiam, fato profugus, Laviniaque venit litora, multum ille et terris iactatus et alto…</p>
+          </div>
+          <div class="popup" style="top: 144px; left: 152px;">
+            <div class="popup-header">
+              <span class="popup-brand">Al</span>
+              <span class="popup-target lang-classical">Troiae</span>
+              <div class="popup-actions">
+                <button class="icon-btn" title="Expand to drawer"><span class="material-symbols-outlined">open_in_full</span></button>
+                <button class="icon-btn" title="Close"><span class="material-symbols-outlined">close</span></button>
+              </div>
+            </div>
+            <div class="progress-bar"></div>
+            <div class="popup-body">
+              <div class="word-meta">
+                <div class="pos-row">
+                  <span class="pos-text" style="opacity:0.5;">analyzing…</span>
+                </div>
+                <span class="lang-chip">Latin</span>
+              </div>
+              <div class="def-list">
+                <div class="def-row"><span class="def-num">1.</span><span class="skeleton" style="width:90%; height:12px;"></span></div>
+                <div class="def-row"><span class="def-num">2.</span><span class="skeleton" style="width:70%; height:12px;"></span></div>
+                <div class="def-row"><span class="def-num">3.</span><span class="skeleton" style="width:80%; height:12px;"></span></div>
+              </div>
+            </div>
+            <div class="popup-footer">
+              <button class="btn-primary" style="opacity:0.5; pointer-events:none;">
+                <span class="material-symbols-outlined" style="font-size:14px;">add</span>
+                Add to list
+              </button>
+              <button class="btn-outline" style="opacity:0.5; pointer-events:none;">
+                <span class="material-symbols-outlined">open_in_full</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="annotation">
+          <strong>State · loading</strong>
+          顶部 2px 不定进度条 + 3 行 skeleton。POS 区域显示 "analyzing…"。footer 操作禁用。
+        </div>
+      </div>
+
+      <!-- =========== STATE 3: NO RESULT =========== -->
+      <div>
+        <div class="scene">
+          <div class="scene-label">03 · No result — empty</div>
+          <div class="mock-text lang-classical">
+            <h2>Aeneis I.1</h2>
+            <p>Arma virumque cano, Troiae qui primus ab oris Italiam, fato profugus, <span class="selection">xyzzy</span> venit litora, multum ille et terris iactatus et alto…</p>
+          </div>
+          <div class="popup" style="top: 168px; left: 80px;">
+            <div class="popup-header">
+              <span class="popup-brand">Al</span>
+              <span class="popup-target lang-classical">xyzzy</span>
+              <div class="popup-actions">
+                <button class="icon-btn"><span class="material-symbols-outlined">open_in_full</span></button>
+                <button class="icon-btn"><span class="material-symbols-outlined">close</span></button>
+              </div>
+            </div>
+            <div class="popup-body">
+              <div class="empty-state">
+                <p class="empty-title">No entry found</p>
+                <p class="empty-desc">
+                  We couldn't find <em class="lang-classical" style="font-style:italic;">xyzzy</em> in any Latin lexicon.
+                  Try a different form, or change the search language.
+                </p>
+                <div style="display:flex; justify-content:center; gap:12px; margin-top:8px;">
+                  <a class="empty-link" href="#">Switch language →</a>
+                  <a class="empty-link" href="#">Lookup variants →</a>
+                </div>
+              </div>
+            </div>
+            <div class="popup-footer">
+              <button class="btn-outline" style="flex:1; justify-content:center;">
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="annotation">
+          <strong>State · empty</strong>
+          无插画，纯文字。给两条出口：换语言 / 查变体。footer 退化为单 close 按钮。
+        </div>
+      </div>
+
+      <!-- =========== STATE 4: ERROR / EMBED CONFLICT =========== -->
+      <div>
+        <div class="scene">
+          <div class="scene-label">04 · Error — auth or network</div>
+          <div class="mock-text lang-classical">
+            <h2>Aeneis I.1</h2>
+            <p>Arma virumque cano, Troiae qui primus <span class="selection">ab oris</span> Italiam, fato profugus, Laviniaque venit litora, multum ille et terris iactatus et alto…</p>
+          </div>
+          <div class="popup" style="top: 144px; left: 168px;">
+            <div class="popup-header">
+              <span class="popup-brand">Al</span>
+              <span class="popup-target lang-classical">ab oris</span>
+              <div class="popup-actions">
+                <button class="icon-btn"><span class="material-symbols-outlined">open_in_full</span></button>
+                <button class="icon-btn"><span class="material-symbols-outlined">close</span></button>
+              </div>
+            </div>
+            <div class="popup-body">
+              <div class="error-banner">
+                <span class="material-symbols-outlined">error</span>
+                <div>
+                  <strong>Couldn't reach the lexicon service</strong>
+                  Check your connection or sign in again. Cached entries are still available.
+                </div>
+              </div>
+              <div class="word-meta">
+                <div class="pos-row">
+                  <span class="pos-text"><strong>NOUN</strong> · FEMININE · PLURAL</span>
+                  <span class="pos-text" style="opacity:0.6; margin-left:6px;">cached</span>
+                </div>
+                <span class="lang-chip">Latin</span>
+              </div>
+              <div class="def-list">
+                <div class="def-row">
+                  <span class="def-num">1.</span>
+                  <span class="def-text">a shore, coast (genitive of <em class="lang-classical">ora</em>)</span>
+                </div>
+              </div>
+            </div>
+            <div class="popup-footer">
+              <button class="btn-outline" style="flex:1; justify-content:center;">
+                <span class="material-symbols-outlined">refresh</span>
+                Retry
+              </button>
+              <button class="btn-outline">
+                <span class="material-symbols-outlined">login</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="annotation">
+          <strong>State · error (with cache fallback)</strong>
+          顶部红色 banner 报错；如果有 cache 数据，仍展示并标"cached"。footer 提供 Retry 与重新登录。
+        </div>
+      </div>
+
+    </div>
+  </main>
+</body>
+</html>

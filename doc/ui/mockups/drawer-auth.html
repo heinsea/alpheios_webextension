@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Alpheios — Drawer · Auth</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Lato:ital,wght@0,400;0,700;1,400&family=Material+Symbols+Outlined:opsz,wght,FILL@20,400,0..1&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --surface: #f9f9fb;
+    --surface-container-lowest: #ffffff;
+    --surface-container-low: #f3f3f5;
+    --surface-container: #edeef0;
+    --surface-container-high: #e8e8ea;
+    --on-surface: #1a1c1d;
+    --on-surface-variant: #4c4546;
+    --glass-surface: rgba(255, 255, 255, 0.55);
+    --glass-surface-low: rgba(255, 255, 255, 0.35);
+    --glass-border: rgba(255, 255, 255, 0.6);
+    --glass-shadow: rgba(0, 0, 0, 0.08);
+    --primary: #000000;
+    --on-primary: #ffffff;
+    --secondary-container: #e1dfdf;
+    --on-secondary-container: #3a3a3a;
+    --tertiary: #0e6b4f;
+    --error: #ba1a1a;
+    --outline: #7e7576;
+    --outline-variant: #cfc4c5;
+    --divider: rgba(0, 0, 0, 0.06);
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    color: var(--on-surface);
+    background: var(--surface);
+    font-size: 12px; line-height: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .lang-classical { font-family: 'Lato', 'Noto Serif', serif; }
+
+  .page { max-width: 1280px; margin: 0 auto; padding: 32px; }
+  .page-title { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 4px; }
+  .page-sub { color: var(--on-surface-variant); margin: 0 0 32px; font-size: 13px; }
+  .breadcrumb { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--on-surface-variant); margin-bottom: 16px; }
+  .breadcrumb a { color: inherit; text-decoration: none; border-bottom: 1px solid var(--outline-variant); }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+  @media (max-width: 1100px) { .grid { grid-template-columns: 1fr; } }
+
+  .scene {
+    background: var(--surface-container-low);
+    border: 1px solid var(--outline-variant);
+    border-radius: 16px;
+    padding: 16px;
+  }
+  .scene-label {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--on-surface-variant); margin-bottom: 12px;
+  }
+
+  .drawer-wrap {
+    display: flex; height: 660px;
+    border-radius: 12px; overflow: hidden;
+    box-shadow: 0 12px 40px var(--glass-shadow);
+  }
+  .sidebar {
+    width: 64px; flex-shrink: 0;
+    background: var(--glass-surface-low);
+    backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid var(--glass-border);
+    border-right: 0;
+    display: flex; flex-direction: column;
+  }
+  .sidebar-brand { height: 44px; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid var(--divider); }
+  .brand-mark {
+    width: 28px; height: 28px; border-radius: 6px;
+    background: var(--primary); color: var(--on-primary);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 11px;
+  }
+  .tabs { flex: 1; display: flex; flex-direction: column; }
+  .tab {
+    height: 56px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 4px;
+    background: transparent; border: 0; border-left: 1.5px solid transparent;
+    color: var(--on-surface-variant); text-decoration: none; cursor: pointer;
+  }
+  .tab:hover { background: rgba(0,0,0,0.04); color: var(--on-surface); }
+  .tab.active { background: rgba(0,0,0,0.06); border-left-color: var(--on-surface); color: var(--on-surface); }
+  .tab.disabled { opacity: 0.32; cursor: not-allowed; }
+  .tab .material-symbols-outlined { font-size: 20px; }
+  .tab-label { font-size: 9px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; }
+  .sidebar-bottom { border-top: 1px solid var(--divider); }
+
+  .panel {
+    flex: 1;
+    background: var(--glass-surface);
+    backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid var(--glass-border);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .topbar {
+    height: 44px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 12px;
+    border-bottom: 1px solid var(--divider);
+    background: rgba(255,255,255,0.25);
+  }
+  .topbar-title { font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; }
+  .topbar-title .lang { color: var(--on-surface-variant); font-weight: 500; }
+  .topbar-actions { display: flex; gap: 2px; }
+
+  .icon-btn {
+    width: 28px; height: 28px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 6px; border: 0; background: transparent; cursor: pointer;
+    color: var(--on-surface-variant);
+  }
+  .icon-btn:hover { background: rgba(0,0,0,0.06); color: var(--on-surface); }
+  .icon-btn .material-symbols-outlined { font-size: 16px; }
+
+  .scroll-area { flex: 1; overflow-y: auto; padding-bottom: 12px; }
+
+  /* ===== logged-out hero card ===== */
+  .auth-hero {
+    flex: 1;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center;
+    padding: 24px 24px 32px;
+    gap: 16px;
+  }
+  .auth-icon-wrap {
+    width: 64px; height: 64px;
+    border-radius: 16px;
+    background: var(--surface-container-lowest);
+    border: 1px solid var(--outline-variant);
+    display: inline-flex; align-items: center; justify-content: center;
+    color: var(--on-surface);
+  }
+  .auth-icon-wrap .material-symbols-outlined { font-size: 28px; }
+
+  .auth-title {
+    font-size: 18px; font-weight: 600;
+    letter-spacing: -0.02em;
+    margin: 0;
+  }
+  .auth-sub {
+    font-size: 12px; line-height: 18px;
+    color: var(--on-surface-variant);
+    max-width: 30ch;
+    margin: 0;
+  }
+
+  .auth-feature-list {
+    width: 100%; max-width: 280px;
+    margin: 4px 0;
+    text-align: left;
+  }
+  .auth-feature {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 6px 0;
+    font-size: 12px;
+  }
+  .auth-feature .material-symbols-outlined {
+    color: var(--tertiary);
+    font-size: 16px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .auth-feature .feat-body {
+    flex: 1;
+  }
+  .auth-feature .feat-body strong {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 1px;
+  }
+  .auth-feature .feat-body span {
+    color: var(--on-surface-variant);
+    font-size: 11px;
+  }
+
+  .auth-cta {
+    background: var(--primary);
+    color: var(--on-primary);
+    border: 0; border-radius: 8px;
+    padding: 12px 24px;
+    font-size: 12px; font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    cursor: pointer;
+    display: inline-flex; align-items: center; gap: 8px;
+    width: 100%; max-width: 280px;
+    justify-content: center;
+  }
+  .auth-cta .material-symbols-outlined { font-size: 16px; }
+  .auth-cta:hover { opacity: 0.92; }
+
+  .auth-foot {
+    font-size: 10px; color: var(--on-surface-variant);
+    letter-spacing: 0.05em;
+  }
+  .auth-foot a {
+    color: var(--primary);
+    text-decoration: none;
+    border-bottom: 1px solid currentColor;
+  }
+  .auth-foot strong { font-weight: 600; }
+
+  /* ===== logged-in profile ===== */
+  .profile-head {
+    display: flex; align-items: center; gap: 14px;
+    padding: 24px 16px 16px;
+  }
+  .avatar {
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #2c2e30, #5e5e5e);
+    color: #fff;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 22px; font-weight: 600;
+    letter-spacing: -0.01em;
+    flex-shrink: 0;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.2);
+  }
+  .profile-meta { flex: 1; min-width: 0; }
+  .profile-name {
+    font-size: 16px; font-weight: 600; letter-spacing: -0.01em;
+    margin: 0 0 2px;
+  }
+  .profile-email {
+    font-size: 11px; color: var(--on-surface-variant);
+    margin: 0;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .profile-plan {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: rgba(14, 107, 79, 0.12);
+    color: var(--tertiary);
+    font-size: 10px; font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 2px 8px; border-radius: 9999px;
+    margin-top: 4px;
+  }
+  .profile-plan .material-symbols-outlined { font-size: 12px; }
+
+  .stats-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    padding: 8px 12px;
+  }
+  .stat-card {
+    background: var(--surface-container-lowest);
+    border: 1px solid var(--outline-variant);
+    border-radius: 8px;
+    padding: 10px 12px;
+    display: flex; flex-direction: column;
+    gap: 2px;
+  }
+  .stat-num {
+    font-size: 18px; font-weight: 600;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat-label {
+    font-size: 9px; font-weight: 500;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--on-surface-variant);
+  }
+
+  .h-section {
+    font-size: 10px; font-weight: 600;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--on-surface-variant);
+    padding: 14px 12px 6px;
+  }
+
+  .activity-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px;
+    border-top: 1px solid var(--divider);
+  }
+  .activity-row:first-of-type { border-top: 0; }
+  .activity-icon {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    background: var(--surface-container);
+    display: inline-flex; align-items: center; justify-content: center;
+    color: var(--on-surface-variant);
+    flex-shrink: 0;
+  }
+  .activity-icon .material-symbols-outlined { font-size: 14px; }
+  .activity-body { flex: 1; min-width: 0; }
+  .activity-text {
+    font-size: 12px;
+    margin: 0;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .activity-text .lang-classical { font-style: italic; font-size: 13px; }
+  .activity-when {
+    font-size: 10px; color: var(--on-surface-variant);
+    margin-top: 1px;
+  }
+
+  .session-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px;
+    border-top: 1px solid var(--divider);
+  }
+  .session-row:first-of-type { border-top: 0; }
+  .session-row .body { flex: 1; min-width: 0; }
+  .session-row .name {
+    font-size: 12px; font-weight: 500;
+  }
+  .session-row .meta {
+    font-size: 10px; color: var(--on-surface-variant);
+  }
+  .session-row .current {
+    background: rgba(14, 107, 79, 0.12);
+    color: var(--tertiary);
+    font-size: 9px; font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 9999px;
+  }
+
+  .footer {
+    flex-shrink: 0;
+    padding: 8px 12px;
+    border-top: 1px solid var(--divider);
+    background: rgba(255,255,255,0.2);
+    display: flex; gap: 6px; align-items: center;
+    font-size: 10px;
+  }
+  .footer .meta { flex: 1; color: var(--on-surface-variant); }
+  .btn-outline {
+    background: transparent; color: var(--on-surface);
+    border: 1px solid var(--outline-variant); border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 10px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase;
+    cursor: pointer;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .btn-outline.danger {
+    color: var(--error);
+    border-color: rgba(186, 26, 26, 0.4);
+  }
+  .btn-outline.danger:hover { background: rgba(186, 26, 26, 0.06); }
+  .btn-outline .material-symbols-outlined { font-size: 14px; }
+
+  .annotation {
+    margin-top: 12px;
+    padding: 12px;
+    background: var(--surface-container-lowest);
+    border: 1px solid var(--outline-variant);
+    border-radius: 12px;
+    font-size: 11px;
+    line-height: 16px;
+    color: var(--on-surface-variant);
+  }
+  .annotation strong {
+    color: var(--on-surface); display: block; margin-bottom: 4px;
+    font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .annotation code {
+    font-family: 'Inter', monospace;
+    background: var(--surface-container-high);
+    padding: 1px 6px; border-radius: 3px; font-size: 10px;
+  }
+</style>
+</head>
+<body>
+  <main class="page">
+    <div class="breadcrumb"><a href="index.html">← All mockups</a></div>
+    <h1 class="page-title">Drawer — Auth</h1>
+    <p class="page-sub">未登录时的引导卡片 + 已登录时的用户页。Login 走外部 Auth0 跳转（v3 当前的实现），登录后同步生词本与历史。</p>
+
+    <div class="grid">
+
+      <!-- =========== Scene 1: Logged out =========== -->
+      <div>
+        <div class="scene">
+          <div class="scene-label">01 · Logged out — sign-in invitation</div>
+          <div class="drawer-wrap">
+            <nav class="sidebar">
+              <div class="sidebar-brand"><span class="brand-mark">Al</span></div>
+              <div class="tabs">
+                <a class="tab" href="drawer-lookup.html"><span class="material-symbols-outlined">search</span><span class="tab-label">Lookup</span></a>
+                <a class="tab" href="#"><span class="material-symbols-outlined">menu_book</span><span class="tab-label">Morph</span></a>
+                <a class="tab" href="drawer-inflections.html"><span class="material-symbols-outlined">table_view</span><span class="tab-label">Infl</span></a>
+                <a class="tab" href="drawer-resources.html"><span class="material-symbols-outlined">format_quote</span><span class="tab-label">Usage</span></a>
+                <a class="tab disabled" href="#"><span class="material-symbols-outlined">account_tree</span><span class="tab-label">Tree</span></a>
+                <a class="tab" href="drawer-resources.html"><span class="material-symbols-outlined">history_edu</span><span class="tab-label">Gram</span></a>
+                <a class="tab" href="drawer-wordlist.html"><span class="material-symbols-outlined">bookmark</span><span class="tab-label">List</span></a>
+              </div>
+              <div class="sidebar-bottom">
+                <a class="tab active" href="#"><span class="material-symbols-outlined">account_circle</span><span class="tab-label">User</span></a>
+                <a class="tab" href="drawer-settings.html"><span class="material-symbols-outlined">settings</span><span class="tab-label">Opts</span></a>
+              </div>
+            </nav>
+
+            <section class="panel">
+              <header class="topbar">
+                <div class="topbar-title">Alpheios <span class="lang">· Sign in</span></div>
+                <div class="topbar-actions">
+                  <button class="icon-btn"><span class="material-symbols-outlined">close_fullscreen</span></button>
+                  <button class="icon-btn"><span class="material-symbols-outlined">close</span></button>
+                </div>
+              </header>
+
+              <div class="auth-hero">
+                <div class="auth-icon-wrap">
+                  <span class="material-symbols-outlined">lock_open</span>
+                </div>
+                <h2 class="auth-title">Sign in to sync</h2>
+                <p class="auth-sub">
+                  Optional. Alpheios works fully offline — sign in only if you want your word lists across devices.
+                </p>
+
+                <div class="auth-feature-list">
+                  <div class="auth-feature">
+                    <span class="material-symbols-outlined">cloud_sync</span>
+                    <div class="feat-body">
+                      <strong>Sync your word list</strong>
+                      <span>Across Chrome, Firefox, and Safari.</span>
+                    </div>
+                  </div>
+                  <div class="auth-feature">
+                    <span class="material-symbols-outlined">history</span>
+                    <div class="feat-body">
+                      <strong>Lookup history</strong>
+                      <span>Pick up where you left off.</span>
+                    </div>
+                  </div>
+                  <div class="auth-feature">
+                    <span class="material-symbols-outlined">share</span>
+                    <div class="feat-body">
+                      <strong>Share annotations</strong>
+                      <span>Export &amp; import lists with classmates.</span>
+                    </div>
+                  </div>
+                </div>
+
+                <button class="auth-cta">
+                  <span class="material-symbols-outlined">login</span>
+                  Continue with Auth0
+                </button>
+
+                <p class="auth-foot">
+                  By signing in you agree to the
+                  <a href="#">Terms</a> and <a href="#">Privacy notice</a>.
+                </p>
+              </div>
+
+              <footer class="footer">
+                <span class="meta">Alpheios · v3.3.2</span>
+                <a class="btn-outline" href="drawer-settings.html"><span class="material-symbols-outlined">settings</span>Settings</a>
+                <button class="btn-outline">Skip for now</button>
+              </footer>
+            </section>
+          </div>
+        </div>
+        <div class="annotation">
+          <strong>State · logged out</strong>
+          以"可选 / 不阻塞"的姿态出现，避免劝退新用户。CTA 用纯黑实色按钮，下方三条 feature 用 tertiary 勾。
+          <ul style="margin:6px 0 0; padding-left:16px;">
+            <li>"Skip for now" 写入 <code>uiOptions.hideLoginPrompt = true</code>。</li>
+            <li>外部 Auth0 跳转保留 v3 已有的 <code>externalLoginUrl</code> 流程，不引入额外密码弹窗。</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- =========== Scene 2: Logged in =========== -->
+      <div>
+        <div class="scene">
+          <div class="scene-label">02 · Logged in — profile, stats, recent activity</div>
+          <div class="drawer-wrap">
+            <nav class="sidebar">
+              <div class="sidebar-brand"><span class="brand-mark">Al</span></div>
+              <div class="tabs">
+                <a class="tab" href="drawer-lookup.html"><span class="material-symbols-outlined">search</span><span class="tab-label">Lookup</span></a>
+                <a class="tab" href="#"><span class="material-symbols-outlined">menu_book</span><span class="tab-label">Morph</span></a>
+                <a class="tab" href="drawer-inflections.html"><span class="material-symbols-outlined">table_view</span><span class="tab-label">Infl</span></a>
+                <a class="tab" href="drawer-resources.html"><span class="material-symbols-outlined">format_quote</span><span class="tab-label">Usage</span></a>
+                <a class="tab disabled" href="#"><span class="material-symbols-outlined">account_tree</span><span class="tab-label">Tree</span></a>
+                <a class="tab" href="drawer-resources.html"><span class="material-symbols-outlined">history_edu</span><span class="tab-label">Gram</span></a>
+                <a class="tab" href="drawer-wordlist.html"><span class="material-symbols-outlined">bookmark</span><span class="tab-label">List</span></a>
+              </div>
+              <div class="sidebar-bottom">
+                <a class="tab active" href="#"><span class="material-symbols-outlined">account_circle</span><span class="tab-label">User</span></a>
+                <a class="tab" href="drawer-settings.html"><span class="material-symbols-outlined">settings</span><span class="tab-label">Opts</span></a>
+              </div>
+            </nav>
+
+            <section class="panel">
+              <header class="topbar">
+                <div class="topbar-title">Alpheios <span class="lang">· Account</span></div>
+                <div class="topbar-actions">
+                  <button class="icon-btn"><span class="material-symbols-outlined">close_fullscreen</span></button>
+                  <button class="icon-btn"><span class="material-symbols-outlined">close</span></button>
+                </div>
+              </header>
+
+              <div class="scroll-area">
+                <div class="profile-head">
+                  <div class="avatar">JD</div>
+                  <div class="profile-meta">
+                    <h2 class="profile-name">Jane Doe</h2>
+                    <p class="profile-email">jane@example.com</p>
+                    <span class="profile-plan">
+                      <span class="material-symbols-outlined">verified</span>
+                      Scholar
+                    </span>
+                  </div>
+                </div>
+
+                <div class="stats-grid">
+                  <div class="stat-card">
+                    <span class="stat-num">39</span>
+                    <span class="stat-label">Words saved</span>
+                  </div>
+                  <div class="stat-card">
+                    <span class="stat-num">3</span>
+                    <span class="stat-label">Languages</span>
+                  </div>
+                  <div class="stat-card">
+                    <span class="stat-num">218</span>
+                    <span class="stat-label">Lookups · 30d</span>
+                  </div>
+                </div>
+
+                <div class="h-section">Recent activity</div>
+
+                <div class="activity-row">
+                  <span class="activity-icon"><span class="material-symbols-outlined">add</span></span>
+                  <div class="activity-body">
+                    <p class="activity-text">Added <span class="lang-classical">arma</span> to Latin word list</p>
+                    <span class="activity-when">2 hours ago · Aeneid 1.1</span>
+                  </div>
+                </div>
+                <div class="activity-row">
+                  <span class="activity-icon"><span class="material-symbols-outlined">search</span></span>
+                  <div class="activity-body">
+                    <p class="activity-text">Looked up <span class="lang-classical">profugus</span></p>
+                    <span class="activity-when">3 hours ago</span>
+                  </div>
+                </div>
+                <div class="activity-row">
+                  <span class="activity-icon"><span class="material-symbols-outlined">file_download</span></span>
+                  <div class="activity-body">
+                    <p class="activity-text">Exported Latin word list</p>
+                    <span class="activity-when">yesterday · 24 entries</span>
+                  </div>
+                </div>
+                <div class="activity-row">
+                  <span class="activity-icon"><span class="material-symbols-outlined">cloud_sync</span></span>
+                  <div class="activity-body">
+                    <p class="activity-text">Synced word lists with cloud</p>
+                    <span class="activity-when">2 days ago</span>
+                  </div>
+                </div>
+
+                <div class="h-section">Active sessions</div>
+
+                <div class="session-row">
+                  <span class="activity-icon"><span class="material-symbols-outlined">laptop_mac</span></span>
+                  <div class="body">
+                    <div class="name">Chrome · macOS</div>
+                    <div class="meta">San Francisco · last active just now</div>
+                  </div>
+                  <span class="current">This device</span>
+                </div>
+                <div class="session-row">
+                  <span class="activity-icon"><span class="material-symbols-outlined">smartphone</span></span>
+                  <div class="body">
+                    <div class="name">Firefox · Android</div>
+                    <div class="meta">Last active 2 days ago</div>
+                  </div>
+                  <button class="btn-outline" style="padding:4px 8px; font-size:9px;">Sign out</button>
+                </div>
+              </div>
+
+              <footer class="footer">
+                <span class="meta">Last sync · just now</span>
+                <button class="btn-outline"><span class="material-symbols-outlined">cloud_sync</span>Sync</button>
+                <button class="btn-outline danger"><span class="material-symbols-outlined">logout</span>Log out</button>
+              </footer>
+            </section>
+          </div>
+        </div>
+        <div class="annotation">
+          <strong>State · logged in</strong>
+          头像 + 名 + email + plan chip。三联 stats（saved / languages / lookups）。下方 recent activity 与 active sessions（多设备登出）。
+          <ul style="margin:6px 0 0; padding-left:16px;">
+            <li>头像无图时用首字母 + 深灰渐变；有图时换成实际 url。</li>
+            <li>"Sign out" 出现在每条非当前 session 行尾，紧凑且不需进一步跳转。</li>
+            <li>底部主操作 Sync + Log out（用 danger outline，避免误点）。</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</body>
+</html>

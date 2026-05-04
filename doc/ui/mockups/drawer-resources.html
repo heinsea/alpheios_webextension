@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Alpheios — Drawer · Resources</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Lato:ital,wght@0,400;0,700;1,400&family=Material+Symbols+Outlined:opsz,wght,FILL@20,400,0..1&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --surface: #f9f9fb;
+    --surface-container-lowest: #ffffff;
+    --surface-container-low: #f3f3f5;
+    --surface-container: #edeef0;
+    --surface-container-high: #e8e8ea;
+    --on-surface: #1a1c1d;
+    --on-surface-variant: #4c4546;
+    --glass-surface: rgba(255, 255, 255, 0.55);
+    --glass-surface-low: rgba(255, 255, 255, 0.35);
+    --glass-border: rgba(255, 255, 255, 0.6);
+    --glass-shadow: rgba(0, 0, 0, 0.08);
+    --primary: #000000;
+    --on-primary: #ffffff;
+    --secondary-container: #e1dfdf;
+    --on-secondary-container: #3a3a3a;
+    --tertiary: #0e6b4f;
+    --error: #ba1a1a;
+    --outline: #7e7576;
+    --outline-variant: #cfc4c5;
+    --divider: rgba(0, 0, 0, 0.06);
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    color: var(--on-surface);
+    background: var(--surface);
+    font-size: 12px; line-height: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .lang-classical { font-family: 'Lato', 'Noto Serif', serif; }
+
+  .page { max-width: 1280px; margin: 0 auto; padding: 32px; }
+  .page-title { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 4px; }
+  .page-sub { color: var(--on-surface-variant); margin: 0 0 32px; font-size: 13px; }
+  .breadcrumb { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--on-surface-variant); margin-bottom: 16px; }
+  .breadcrumb a { color: inherit; text-decoration: none; border-bottom: 1px solid var(--outline-variant); }
+
+  .stack { display: flex; flex-direction: column; gap: 32px; }
+
+  .scene {
+    background: var(--surface-container-low);
+    border: 1px solid var(--outline-variant);
+    border-radius: 16px;
+    padding: 16px;
+  }
+  .scene-label {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--on-surface-variant); margin-bottom: 12px;
+  }
+
+  .drawer-row {
+    display: grid;
+    grid-template-columns: 444px 1fr;
+    gap: 24px;
+    align-items: stretch;
+  }
+  @media (max-width: 980px) {
+    .drawer-row { grid-template-columns: 1fr; }
+  }
+
+  .drawer-wrap {
+    display: flex; height: 680px;
+    border-radius: 12px; overflow: hidden;
+    box-shadow: 0 12px 40px var(--glass-shadow);
+  }
+  .sidebar {
+    width: 64px; flex-shrink: 0;
+    background: var(--glass-surface-low);
+    backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid var(--glass-border);
+    border-right: 0;
+    display: flex; flex-direction: column;
+  }
+  .sidebar-brand { height: 44px; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid var(--divider); }
+  .brand-mark {
+    width: 28px; height: 28px; border-radius: 6px;
+    background: var(--primary); color: var(--on-primary);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 11px;
+  }
+  .tabs { flex: 1; display: flex; flex-direction: column; }
+  .tab {
+    height: 56px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 4px;
+    background: transparent; border: 0; border-left: 1.5px solid transparent;
+    color: var(--on-surface-variant); text-decoration: none; cursor: pointer;
+  }
+  .tab:hover { background: rgba(0,0,0,0.04); color: var(--on-surface); }
+  .tab.active { background: rgba(0,0,0,0.06); border-left-color: var(--on-surface); color: var(--on-surface); }
+  .tab.disabled { opacity: 0.32; cursor: not-allowed; }
+  .tab .material-symbols-outlined { font-size: 20px; }
+  .tab-label { font-size: 9px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; }
+  .sidebar-bottom { border-top: 1px solid var(--divider); }
+
+  .panel {
+    flex: 1;
+    background: var(--glass-surface);
+    backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid var(--glass-border);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .topbar {
+    height: 44px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 12px;
+    border-bottom: 1px solid var(--divider);
+    background: rgba(255,255,255,0.25);
+  }
+  .topbar-title { font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; }
+  .topbar-title .lang { color: var(--on-surface-variant); font-weight: 500; }
+  .topbar-actions { display: flex; gap: 2px; }
+
+  .icon-btn {
+    width: 28px; height: 28px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 6px; border: 0; background: transparent; cursor: pointer;
+    color: var(--on-surface-variant);
+  }
+  .icon-btn:hover { background: rgba(0,0,0,0.06); color: var(--on-surface); }
+  .icon-btn .material-symbols-outlined { font-size: 16px; }
+
+  .scroll-area { flex: 1; overflow-y: auto; padding-bottom: 12px; }
+  .scroll-area::-webkit-scrollbar { width: 4px; }
+  .scroll-area::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.18); border-radius: 2px; }
+
+  .h-section {
+    font-size: 10px; font-weight: 600;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--on-surface-variant);
+    padding: 10px 12px 6px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+
+  .annotation {
+    flex: 1;
+    padding: 16px 20px;
+    background: var(--surface-container-lowest);
+    border: 1px solid var(--outline-variant);
+    border-radius: 12px;
+    font-size: 12px;
+    line-height: 18px;
+    color: var(--on-surface-variant);
+  }
+  .annotation strong {
+    color: var(--on-surface); display: block; margin-bottom: 8px;
+    font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .annotation ul { padding-left: 16px; margin: 4px 0; }
+  .annotation li { margin: 4px 0; }
+  .annotation code {
+    font-family: 'Inter', monospace;
+    background: var(--surface-container-high);
+    padding: 1px 6px; border-radius: 3px; font-size: 11px;
+  }
+
+  /* ============== USAGE EXAMPLES ============== */
+  .chip-row { display: flex; gap: 4px; flex-wrap: wrap; padding: 8px 12px; }
+  .chip {
+    background: rgba(0,0,0,0.05);
+    color: var(--on-surface-variant);
+    border-radius: 9999px;
+    padding: 4px 10px;
+    font-size: 10px; font-weight: 500;
+    letter-spacing: 0.05em; text-transform: uppercase;
+    cursor: pointer; border: 0;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .chip.active { background: var(--primary); color: var(--on-primary); }
+  .chip .material-symbols-outlined { font-size: 12px; }
+
+  .author-group { padding: 0 12px 6px; }
+  .author-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    padding: 8px 4px;
+  }
+  .author-name { font-family: 'Lato', serif; font-size: 14px; font-weight: 700; }
+  .author-meta { font-size: 10px; color: var(--on-surface-variant); letter-spacing: 0.05em; text-transform: uppercase; }
+
+  .quote-card {
+    background: var(--surface-container-lowest);
+    border: 1px solid var(--outline-variant);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 4px;
+  }
+  .quote-card .quote {
+    font-family: 'Lato', serif; font-style: italic;
+    font-size: 12px; line-height: 18px;
+    margin: 0 0 6px;
+  }
+  .quote-card .quote mark {
+    background: rgba(0,0,0,0.04);
+    border-bottom: 1px solid rgba(0,0,0,0.18);
+    padding: 0 1px; color: inherit;
+  }
+  .quote-card .quote-foot {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 10px;
+    color: var(--on-surface-variant);
+    font-family: 'Lato', serif;
+  }
+  .quote-card .show-more {
+    text-align: center;
+    font-size: 10px; color: var(--primary); font-weight: 500;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 6px;
+    cursor: pointer;
+  }
+  .quote-card .show-more:hover { text-decoration: underline; }
+
+  /* ============== GRAMMAR ============== */
+  .resource-list { padding: 8px 12px; display: flex; flex-direction: column; gap: 6px; }
+  .resource-card {
+    background: var(--surface-container-lowest);
+    border: 1px solid var(--outline-variant);
+    border-radius: 10px;
+    padding: 10px 12px;
+    display: flex; align-items: center; gap: 10px;
+    cursor: pointer;
+    transition: border-color 120ms cubic-bezier(0.2,0,0,1), transform 120ms;
+  }
+  .resource-card:hover { border-color: var(--on-surface); transform: translateY(-1px); }
+  .resource-card.active {
+    border-color: var(--on-surface);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  }
+  .resource-card .icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    background: var(--surface-container);
+    display: inline-flex; align-items: center; justify-content: center;
+    color: var(--on-surface-variant);
+    flex-shrink: 0;
+  }
+  .resource-card .icon .material-symbols-outlined { font-size: 18px; }
+  .resource-card .body { flex: 1; min-width: 0; }
+  .resource-card .title { font-size: 12px; font-weight: 600; margin: 0 0 2px; letter-spacing: -0.01em; }
+  .resource-card .meta { font-size: 11px; color: var(--on-surface-variant); }
+
+  .grammar-reading { padding: 12px; }
+  .grammar-reading h3 {
+    font-size: 14px; font-weight: 700;
+    margin: 0 0 8px;
+    letter-spacing: -0.01em;
+  }
+  .grammar-reading p {
+    font-family: 'Lato', serif;
+    font-size: 13px; line-height: 21px;
+    margin: 0 0 12px;
+    color: var(--on-surface);
+  }
+  .grammar-reading p .em { font-style: italic; color: var(--on-surface-variant); }
+  .grammar-reading .anchor {
+    display: inline-block;
+    font-size: 10px; font-weight: 500;
+    color: var(--on-surface-variant);
+    letter-spacing: 0.08em; text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .grammar-reading .crossref {
+    display: inline-block;
+    border-bottom: 1px solid var(--outline-variant);
+    color: var(--primary);
+    text-decoration: none;
+  }
+  .grammar-reading blockquote {
+    margin: 8px 0;
+    padding: 8px 12px;
+    background: rgba(0,0,0,0.04);
+    border-left: 3px solid var(--outline-variant);
+    border-radius: 0 6px 6px 0;
+    font-family: 'Lato', serif;
+    font-style: italic;
+    font-size: 12px;
+    color: var(--on-surface-variant);
+  }
+  .toc-jump {
+    margin: 0 12px 8px;
+    padding: 10px 12px;
+    border: 1px dashed var(--outline-variant);
+    border-radius: 8px;
+    font-size: 10px;
+    color: var(--on-surface-variant);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .toc-jump .material-symbols-outlined { font-size: 14px; }
+
+  /* ============== TREEBANK ============== */
+  .treebank-toolbar {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--divider);
+  }
+  .pager {
+    display: inline-flex; gap: 0;
+    background: rgba(0,0,0,0.05);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .pager button {
+    background: transparent; border: 0; padding: 4px 8px;
+    color: var(--on-surface-variant); cursor: pointer;
+  }
+  .pager button:hover { background: rgba(0,0,0,0.08); color: var(--on-surface); }
+  .pager .material-symbols-outlined { font-size: 14px; }
+
+  .sentence-id {
+    font-size: 10px; font-weight: 500;
+    color: var(--on-surface-variant);
+    letter-spacing: 0.08em; text-transform: uppercase;
+    flex: 1;
+  }
+  .sentence-id strong { color: var(--on-surface); }
+
+  .zoom-ctl {
+    display: inline-flex;
+    border: 1px solid var(--outline-variant);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .zoom-ctl button {
+    background: var(--surface-container-lowest);
+    border: 0; width: 24px; height: 24px;
+    color: var(--on-surface-variant);
+    cursor: pointer;
+  }
+  .zoom-ctl button + button { border-left: 1px solid var(--outline-variant); }
+  .zoom-ctl .material-symbols-outlined { font-size: 14px; }
+
+  .tree-canvas {
+    flex: 1;
+    background:
+      radial-gradient(circle at 50% 50%, rgba(255,255,255,0.6), transparent 60%),
+      var(--surface-container-low);
+    position: relative;
+    overflow: auto;
+  }
+  .tree-svg-wrap {
+    padding: 16px 12px;
+    min-width: 100%;
+    min-height: 100%;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .tree-text-strip {
+    padding: 8px 12px;
+    border-top: 1px solid var(--divider);
+    background: rgba(255,255,255,0.3);
+    font-family: 'Lato', serif;
+    font-size: 12px;
+    line-height: 18px;
+    color: var(--on-surface-variant);
+  }
+  .tree-text-strip .hl {
+    color: var(--tertiary);
+    font-weight: 700;
+    background: rgba(14,107,79,0.08);
+    padding: 0 2px;
+    border-radius: 2px;
+  }
+
+  .footer {
+    flex-shrink: 0;
+    padding: 8px 12px;
+    border-top: 1px solid var(--divider);
+    background: rgba(255,255,255,0.2);
+    display: flex; gap: 6px; align-items: center;
+    font-size: 10px;
+  }
+  .footer .meta { flex: 1; color: var(--on-surface-variant); }
+  .btn-outline {
+    background: transparent; color: var(--on-surface);
+    border: 1px solid var(--outline-variant); border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 10px; font-weight: 500;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    cursor: pointer;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .btn-outline .material-symbols-outlined { font-size: 14px; }
+</style>
+</head>
+<body>
+  <main class="page">
+    <div class="breadcrumb"><a href="index.html">← All mockups</a></div>
+    <h1 class="page-title">Drawer — Resources</h1>
+    <p class="page-sub">三个学习辅助页面：用法示例（Word Usage Examples）、语法资源（Grammar）、依存树查看器（Treebank）。</p>
+
+    <div class="stack">
+
+      <!-- =========== Scene 1: Word Usage Examples =========== -->
+      <div class="scene">
+        <div class="scene-label">01 · Word Usage Examples — quotes grouped by author</div>
+        <div class="drawer-row">
+          <div class="drawer-wrap">
+            <nav class="sidebar">
+              <div class="sidebar-brand"><span class="brand-mark">Al</span></div>
+              <div class="tabs">
+                <a class="tab" href="drawer-lookup.html"><span class="material-symbols-outlined">search</span><span class="tab-label">Lookup</span></a>
+                <a class="tab" href="#"><span class="material-symbols-outlined">menu_book</span><span class="tab-label">Morph</span></a>
+                <a class="tab" href="drawer-inflections.html"><span class="material-symbols-outlined">table_view</span><span class="tab-label">Infl</span></a>
+                <a class="tab active" href="#"><span class="material-symbols-outlined">format_quote</span><span class="tab-label">Usage</span></a>
+                <a class="tab" href="#"><span class="material-symbols-outlined">account_tree</span><span class="tab-label">Tree</span></a>
+                <a class="tab" href="#"><span class="material-symbols-outlined">history_edu</span><span class="tab-label">Gram</span></a>
+                <a class="tab" href="drawer-wordlist.html"><span class="material-symbols-outlined">bookmark</span><span class="tab-label">List</span></a>
+              </div>
+              <div class="sidebar-bottom">
+                <a class="tab" href="drawer-auth.html"><span class="material-symbols-outlined">account_circle</span><span class="tab-label">User</span></a>
+                <a class="tab" href="drawer-settings.html"><span class="material-symbols-outlined">settings</span><span class="tab-label">Opts</span></a>
+              </div>
+            </nav>
+
+            <section class="panel">
+              <header class="topbar">
+                <div class="topbar-title">Alpheios <span class="lang">· Word Usage</span></div>
+                <div class="topbar-actions">
+                  <button class="icon-btn"><span class="material-symbols-outlined">close_fullscreen</span></button>
+                  <button class="icon-btn"><span class="material-symbols-outlined">close</span></button>
+                </div>
+              </header>
+
+              <div style="padding: 12px 12px 4px;">
+                <div style="display:flex; align-items:baseline; justify-content:space-between;">
+                  <h2 style="font-size:16px; font-weight:600; letter-spacing:-0.01em; margin:0;">Examples for <span class="lang-classical">arma</span></h2>
+                  <span style="font-size: 10px; color: var(--on-surface-variant); letter-spacing: 0.08em; text-transform: uppercase;">42 quotes</span>
+                </div>
+              </div>
+
+              <div class="chip-row">
+                <button class="chip active">All authors</button>
+                <button class="chip">Virgil <span style="opacity:0.6;">· 18</span></button>
+                <button class="chip">Cicero <span style="opacity:0.6;">· 9</span></button>
+                <button class="chip">Caesar <span style="opacity:0.6;">· 7</span></button>
+                <button class="chip">Tacitus <span style="opacity:0.6;">· 5</span></button>
+                <button class="chip">Horace <span style="opacity:0.6;">· 3</span></button>
+              </div>
+              <div class="chip-row" style="padding-top:0;">
+                <button class="chip"><span class="material-symbols-outlined">sort</span>Sort: by date</button>
+                <button class="chip"><span class="material-symbols-outlined">filter_alt</span>Genre: any</button>
+              </div>
+
+              <div class="scroll-area">
+                <div class="author-group">
+                  <div class="author-head">
+                    <span class="author-name lang-classical">Virgil</span>
+                    <span class="author-meta">70–19 BC · 3 works</span>
+                  </div>
+
+                  <div class="quote-card">
+                    <p class="quote lang-classical">
+                      <mark>Arma</mark> virumque cano, Troiae qui primus ab oris Italiam, fato profugus, Laviniaque venit litora.
+                    </p>
+                    <div class="quote-foot">
+                      <span><em>Aeneid</em> 1.1</span>
+                      <a style="color:var(--primary); text-decoration:none; border-bottom:1px solid currentColor; font-family: Inter; font-size:10px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase;" href="#">Open →</a>
+                    </div>
+                  </div>
+
+                  <div class="quote-card">
+                    <p class="quote lang-classical">
+                      …saevit medio in certamine Mavors caelatus ferro, tristesque ex aethere Dirae, et scissa gaudens vadit Discordia palla, quam cum sanguineo sequitur Bellona flagello. Pallas <mark>arma</mark> rapit…
+                    </p>
+                    <div class="quote-foot">
+                      <span><em>Aeneid</em> 8.700</span>
+                      <a style="color:var(--primary); text-decoration:none; border-bottom:1px solid currentColor; font-family: Inter; font-size:10px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase;" href="#">Open →</a>
+                    </div>
+                  </div>
+
+                  <div class="quote-card show-more">View 16 more from Virgil →</div>
+                </div>
+
+                <div class="author-group">
+                  <div class="author-head">
+                    <span class="author-name lang-classical">Cicero</span>
+                    <span class="author-meta">106–43 BC · 5 works</span>
+                  </div>
+
+                  <div class="quote-card">
+                    <p class="quote lang-classical">
+                      Sed iam <mark>arma</mark> ipsa ferarum vis et impetus suos vincere…
+                    </p>
+                    <div class="quote-foot">
+                      <span><em>De Officiis</em> 1.34</span>
+                      <a style="color:var(--primary); text-decoration:none; border-bottom:1px solid currentColor; font-family: Inter; font-size:10px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase;" href="#">Open →</a>
+                    </div>
+                  </div>
+
+                  <div class="quote-card show-more">View 8 more from Cicero →</div>
+                </div>
+
+              </div>
+
+              <footer class="footer">
+                <span class="meta">arma · Latin · 42 quotes · 5 authors</span>
+                <button class="btn-outline"><span class="material-symbols-outlined">sync</span></button>
+                <button class="btn-outline">Cite all</button>
+              </footer>
+            </section>
+          </div>
+
+          <div class="annotation">
+            <strong>Word Usage Examples</strong>
+            按作者分组（每组默认 ≤ 5 条），点击 author chip 过滤；时间 / 体裁 chip 在第二行。
+            <ul>
+              <li>顶部 chip 行用 <code>filter_alt</code> 与 <code>sort</code> 图标做区分。</li>
+              <li>每条引文：italic 拉丁文 + 命中词 mark，下方右对齐 Open 链接。</li>
+              <li>"View N more" 是溢出展开按钮，避免一次渲染过多。</li>
+              <li>底部 footer 提供刷新（重抓数据）和"Cite all"导出格式化引文。</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- =========== Scene 2: Grammar =========== -->
+      <div class="scene">
+        <div class="scene-label">02 · Grammar — resource list → reading view</div>
+        <div class="drawer-row">
+          <div class="drawer-wrap">
+            <nav class="sidebar">
+              <div class="sidebar-brand"><span class="brand-mark">Al</span></div>
+              <div class="tabs">
+                <a class="tab" href="drawer-lookup.html"><span class="material-symbols-outlined">search</span><span class="tab-label">Lookup</span></a>
+                <a class="tab" href="#"><span class="material-symbols-outlined">menu_book</span><span class="tab-label">Morph</span></a>
+                <a class="tab" href="drawer-inflections.html"><span class="material-symbols-outlined">table_view</span><span class="tab-label">Infl</span></a>
+                <a class="tab" href="#"><span class="material-symbols-outlined">format_quote</span><span class="tab-label">Usage</span></a>
+                <a class="tab" href="#"><span class="material-symbols-outlined">account_tree</span><span class="tab-label">Tree</span></a>
+                <a class="tab active" href="#"><span class="material-symbols-outlined">history_edu</span><span class="tab-label">Gram</span></a>
+                <a class="tab" href="drawer-wordlist.html"><span class="material-symbols-outlined">bookmark</span><span class="tab-label">List</span></a>
+              </div>
+              <div class="sidebar-bottom">
+                <a class="tab" href="drawer-auth.html"><span class="material-symbols-outlined">account_circle</span><span class="tab-label">User</span></a>
+                <a class="tab" href="drawer-settings.html"><span class="material-symbols-outlined">settings</span><span class="tab-label">Opts</span></a>
+              </div>
+            </nav>
+
+            <section class="panel">
+              <header class="topbar">
+                <div class="topbar-title">Alpheios <span class="lang">· Grammar</span></div>
+                <div class="topbar-actions">
+                  <button class="icon-btn" title="Back"><span class="material-symbols-outlined">arrow_back</span></button>
+                  <button class="icon-btn"><span class="material-symbols-outlined">close</span></button>
+                </div>
+              </header>
+
+              <div class="h-section">
+                <span>Latin grammars · 4 sources</span>
+                <button class="icon-btn"><span class="material-symbols-outlined">tune</span></button>
+              </div>
+
+              <div class="resource-list">
+                <div class="resource-card active">
+                  <span class="icon"><span class="material-symbols-outlined">menu_book</span></span>
+                  <div class="body">
+                    <p class="title">Allen &amp; Greenough's New Latin Grammar</p>
+                    <p class="meta">1903 · 642 sections · current</p>
+                  </div>
+                  <span class="material-symbols-outlined" style="color:var(--on-surface-variant);">chevron_right</span>
+                </div>
+                <div class="resource-card">
+                  <span class="icon"><span class="material-symbols-outlined">menu_book</span></span>
+                  <div class="body">
+                    <p class="title">Bennett's New Latin Grammar</p>
+                    <p class="meta">1908 · 412 sections</p>
+                  </div>
+                  <span class="material-symbols-outlined" style="color:var(--on-surface-variant);">chevron_right</span>
+                </div>
+                <div class="resource-card">
+                  <span class="icon"><span class="material-symbols-outlined">menu_book</span></span>
+                  <div class="body">
+                    <p class="title">Gildersleeve &amp; Lodge</p>
+                    <p class="meta">1895 · 528 sections</p>
+                  </div>
+                  <span class="material-symbols-outlined" style="color:var(--on-surface-variant);">chevron_right</span>
+                </div>
+              </div>
+
+              <div class="toc-jump">
+                <span class="material-symbols-outlined">link</span>
+                Linked from <em class="lang-classical">arma</em> · §47 — Cases of nouns: nominative
+              </div>
+
+              <div class="grammar-reading">
+                <span class="anchor">A&amp;G §47 · Nominative case</span>
+                <h3>The Nominative Case</h3>
+                <p>
+                  The nominative is the case of the <span class="em">subject</span>. The subject of a finite verb is in the nominative case, denoting the person or thing that performs the action of the verb, or that is in the state described by the verb. <a class="crossref" href="#">See §340 for predicate nominative.</a>
+                </p>
+                <blockquote>
+                  <span class="lang-classical">Mīlitēs in castra revertuntur.</span><br />
+                  The soldiers return to camp.
+                </blockquote>
+                <p>
+                  Some Latin nouns are used predominantly or exclusively in the plural — these are called <span class="em">pluralia tantum</span>. <span class="lang-classical" style="font-style:italic;">Arma</span>, <em>weapons</em>, is one such noun: in classical prose and verse it appears almost exclusively in the plural, the singular being a rare reconstruction.
+                </p>
+              </div>
+
+              <footer class="footer">
+                <span class="meta">A&amp;G §47 · 1 of 642</span>
+                <button class="btn-outline"><span class="material-symbols-outlined">arrow_back_ios_new</span></button>
+                <button class="btn-outline">§48 →</button>
+              </footer>
+            </section>
+          </div>
+
+          <div class="annotation">
+            <strong>Grammar — list + reading view</strong>
+            上半部是资源列表（A&amp;G、Bennett、G&amp;L 等），点击进入阅读视图。
+            <ul>
+              <li>"Linked from arma · §47" 是 lookup 跳过来时的来源条带，提醒上下文。</li>
+              <li>阅读区使用 Lato serif + 正文 13/21，blockquote 用左侧 3px 实线 + 浅灰底。</li>
+              <li>底部按钮做章节翻页，比页面内目录更适合 380px 宽度。</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- =========== Scene 3: Treebank =========== -->
+      <div class="scene">
+        <div class="scene-label">03 · Treebank — dependency tree viewer</div>
+        <div class="drawer-row">
+          <div class="drawer-wrap">
+            <nav class="sidebar">
+              <div class="sidebar-brand"><span class="brand-mark">Al</span></div>
+              <div class="tabs">
+                <a class="tab" href="drawer-lookup.html"><span class="material-symbols-outlined">search</span><span class="tab-label">Lookup</span></a>
+                <a class="tab" href="#"><span class="material-symbols-outlined">menu_book</span><span class="tab-label">Morph</span></a>
+                <a class="tab" href="drawer-inflections.html"><span class="material-symbols-outlined">table_view</span><span class="tab-label">Infl</span></a>
+                <a class="tab" href="#"><span class="material-symbols-outlined">format_quote</span><span class="tab-label">Usage</span></a>
+                <a class="tab active" href="#"><span class="material-symbols-outlined">account_tree</span><span class="tab-label">Tree</span></a>
+                <a class="tab" href="#"><span class="material-symbols-outlined">history_edu</span><span class="tab-label">Gram</span></a>
+                <a class="tab" href="drawer-wordlist.html"><span class="material-symbols-outlined">bookmark</span><span class="tab-label">List</span></a>
+              </div>
+              <div class="sidebar-bottom">
+                <a class="tab" href="drawer-auth.html"><span class="material-symbols-outlined">account_circle</span><span class="tab-label">User</span></a>
+                <a class="tab" href="drawer-settings.html"><span class="material-symbols-outlined">settings</span><span class="tab-label">Opts</span></a>
+              </div>
+            </nav>
+
+            <section class="panel">
+              <header class="topbar">
+                <div class="topbar-title">Alpheios <span class="lang">· Treebank</span></div>
+                <div class="topbar-actions">
+                  <button class="icon-btn"><span class="material-symbols-outlined">close_fullscreen</span></button>
+                  <button class="icon-btn"><span class="material-symbols-outlined">close</span></button>
+                </div>
+              </header>
+
+              <div class="treebank-toolbar">
+                <div class="pager">
+                  <button title="First sentence"><span class="material-symbols-outlined">first_page</span></button>
+                  <button title="Previous"><span class="material-symbols-outlined">chevron_left</span></button>
+                </div>
+                <span class="sentence-id">Aeneid 1 · sentence <strong>1</strong> of 756</span>
+                <div class="pager">
+                  <button title="Next"><span class="material-symbols-outlined">chevron_right</span></button>
+                  <button title="Last sentence"><span class="material-symbols-outlined">last_page</span></button>
+                </div>
+                <div class="zoom-ctl">
+                  <button title="Zoom in"><span class="material-symbols-outlined">add</span></button>
+                  <button title="Zoom out"><span class="material-symbols-outlined">remove</span></button>
+                  <button title="Fit"><span class="material-symbols-outlined">fit_screen</span></button>
+                </div>
+              </div>
+
+              <div class="tree-canvas">
+                <div class="tree-svg-wrap">
+                  <!-- Hand-rolled SVG: dependency tree for "Arma virumque cano" -->
+                  <svg width="540" height="320" viewBox="0 0 540 320" xmlns="http://www.w3.org/2000/svg" style="font-family: 'Inter', sans-serif;">
+                    <!-- edges (drawn first, behind nodes) -->
+                    <g stroke="#cfc4c5" stroke-width="1.2" fill="none">
+                      <path d="M 270 60 L 130 140" />
+                      <path d="M 270 60 L 270 140" />
+                      <path d="M 270 60 L 410 140" />
+                      <path d="M 410 140 L 410 220" />
+                      <path d="M 130 140 L 130 220" />
+                    </g>
+
+                    <!-- edge labels -->
+                    <g font-size="9" fill="#7e7576" font-weight="500" letter-spacing="0.05em" text-anchor="middle">
+                      <text x="200" y="105">OBJ</text>
+                      <text x="270" y="105">ROOT</text>
+                      <text x="340" y="105">OBJ</text>
+                      <text x="420" y="185">CO</text>
+                      <text x="140" y="185">ATR</text>
+                    </g>
+
+                    <!-- nodes -->
+                    <!-- root: cano -->
+                    <g>
+                      <rect x="222" y="34" width="96" height="44" rx="8"
+                            fill="#0e6b4f" stroke="#0e6b4f" />
+                      <text x="270" y="54" text-anchor="middle" font-family="Lato, serif" font-size="14" font-weight="700" fill="#ffffff">cano</text>
+                      <text x="270" y="68" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.85)" letter-spacing="0.08em">VERB · 1SG</text>
+                    </g>
+
+                    <!-- arma -->
+                    <g>
+                      <rect x="82" y="114" width="96" height="44" rx="8"
+                            fill="#ffffff" stroke="#1a1c1d" stroke-width="1.5" />
+                      <text x="130" y="134" text-anchor="middle" font-family="Lato, serif" font-size="14" font-weight="700" fill="#1a1c1d">arma</text>
+                      <text x="130" y="148" text-anchor="middle" font-size="9" fill="#4c4546" letter-spacing="0.08em">NOUN · ACC.PL</text>
+                    </g>
+
+                    <!-- virum -->
+                    <g>
+                      <rect x="222" y="114" width="96" height="44" rx="8"
+                            fill="#ffffff" stroke="#cfc4c5" />
+                      <text x="270" y="134" text-anchor="middle" font-family="Lato, serif" font-size="14" font-weight="500" fill="#1a1c1d">virum</text>
+                      <text x="270" y="148" text-anchor="middle" font-size="9" fill="#4c4546" letter-spacing="0.08em">NOUN · ACC.SG</text>
+                    </g>
+
+                    <!-- -que (conjunction) -->
+                    <g>
+                      <rect x="362" y="114" width="96" height="44" rx="8"
+                            fill="#ffffff" stroke="#cfc4c5" />
+                      <text x="410" y="134" text-anchor="middle" font-family="Lato, serif" font-size="14" font-weight="500" fill="#1a1c1d">-que</text>
+                      <text x="410" y="148" text-anchor="middle" font-size="9" fill="#4c4546" letter-spacing="0.08em">CONJ</text>
+                    </g>
+
+                    <!-- ab oris (sub) -->
+                    <g>
+                      <rect x="362" y="194" width="96" height="44" rx="8"
+                            fill="#ffffff" stroke="#cfc4c5" />
+                      <text x="410" y="214" text-anchor="middle" font-family="Lato, serif" font-size="14" font-weight="500" fill="#1a1c1d">qui</text>
+                      <text x="410" y="228" text-anchor="middle" font-size="9" fill="#4c4546" letter-spacing="0.08em">PRON · NOM</text>
+                    </g>
+
+                    <!-- modifiers under arma -->
+                    <g>
+                      <rect x="82" y="194" width="96" height="44" rx="8"
+                            fill="#ffffff" stroke="#cfc4c5" />
+                      <text x="130" y="214" text-anchor="middle" font-family="Lato, serif" font-size="14" font-weight="500" fill="#1a1c1d">Troiae</text>
+                      <text x="130" y="228" text-anchor="middle" font-size="9" fill="#4c4546" letter-spacing="0.08em">NOUN · GEN.SG</text>
+                    </g>
+                  </svg>
+                </div>
+              </div>
+
+              <div class="tree-text-strip">
+                <span class="hl">Arma</span> virumque cano, Troiae qui primus ab oris…
+              </div>
+
+              <footer class="footer">
+                <span class="meta">Aeneid 1.1 · Perseus treebank · v2.1</span>
+                <button class="btn-outline"><span class="material-symbols-outlined">link</span>Permalink</button>
+                <button class="btn-outline"><span class="material-symbols-outlined">help</span></button>
+              </footer>
+            </section>
+          </div>
+
+          <div class="annotation">
+            <strong>Treebank — dependency tree viewer</strong>
+            根节点用 <code>tertiary</code> 实色填充 + 白字突出 ROOT；其余节点白底 + 1px outline。
+            <ul>
+              <li>顶部工具条：左 pager（首/前/后/末）、中央 sentence-id、右 zoom 控件。</li>
+              <li>边上的 <code>OBJ / ROOT / ATR / CO</code> 是依存关系标签，9px label-xs。</li>
+              <li>当前命中 token（<em class="lang-classical">arma</em>）用粗 outline 强调；其他节点淡化。</li>
+              <li>底部 strip 是当前句的纯文本，方便阅读对照。</li>
+              <li>Permalink 复制到剪贴板用于在 issue / 笔记里引用。</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</body>
+</html>

@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Alpheios — Drawer · Word List</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Lato:ital,wght@0,400;0,700;1,400&family=Material+Symbols+Outlined:opsz,wght,FILL@20,400,0..1&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --surface: #f9f9fb;
+    --surface-container-lowest: #ffffff;
+    --surface-container-low: #f3f3f5;
+    --surface-container: #edeef0;
+    --surface-container-high: #e8e8ea;
+    --on-surface: #1a1c1d;
+    --on-surface-variant: #4c4546;
+    --glass-surface: rgba(255, 255, 255, 0.55);
+    --glass-surface-low: rgba(255, 255, 255, 0.35);
+    --glass-border: rgba(255, 255, 255, 0.6);
+    --glass-shadow: rgba(0, 0, 0, 0.08);
+    --primary: #000000;
+    --on-primary: #ffffff;
+    --secondary-container: #e1dfdf;
+    --on-secondary-container: #3a3a3a;
+    --tertiary: #0e6b4f;
+    --error: #ba1a1a;
+    --outline: #7e7576;
+    --outline-variant: #cfc4c5;
+    --divider: rgba(0, 0, 0, 0.06);
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    color: var(--on-surface);
+    background: var(--surface);
+    font-size: 12px; line-height: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .lang-classical { font-family: 'Lato', 'Noto Serif', serif; }
+
+  .page { max-width: 1280px; margin: 0 auto; padding: 32px; }
+  .page-title { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 4px; }
+  .page-sub { color: var(--on-surface-variant); margin: 0 0 32px; font-size: 13px; }
+  .breadcrumb { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--on-surface-variant); margin-bottom: 16px; }
+  .breadcrumb a { color: inherit; text-decoration: none; border-bottom: 1px solid var(--outline-variant); }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+  @media (max-width: 1100px) { .grid { grid-template-columns: 1fr; } }
+
+  .scene {
+    background: var(--surface-container-low);
+    border: 1px solid var(--outline-variant);
+    border-radius: 16px;
+    padding: 16px;
+  }
+  .scene-label {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--on-surface-variant); margin-bottom: 12px;
+  }
+
+  .drawer-wrap {
+    display: flex; height: 720px;
+    border-radius: 12px; overflow: hidden;
+    box-shadow: 0 12px 40px var(--glass-shadow);
+  }
+  .sidebar {
+    width: 64px; flex-shrink: 0;
+    background: var(--glass-surface-low);
+    backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid var(--glass-border);
+    border-right: 0;
+    display: flex; flex-direction: column;
+  }
+  .sidebar-brand { height: 44px; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid var(--divider); }
+  .brand-mark {
+    width: 28px; height: 28px; border-radius: 6px;
+    background: var(--primary); color: var(--on-primary);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 11px;
+  }
+  .tabs { flex: 1; display: flex; flex-direction: column; }
+  .tab {
+    height: 56px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 4px;
+    background: transparent; border: 0; border-left: 1.5px solid transparent;
+    color: var(--on-surface-variant); text-decoration: none; cursor: pointer;
+  }
+  .tab:hover { background: rgba(0,0,0,0.04); color: var(--on-surface); }
+  .tab.active { background: rgba(0,0,0,0.06); border-left-color: var(--on-surface); color: var(--on-surface); }
+  .tab.disabled { opacity: 0.32; cursor: not-allowed; }
+  .tab .material-symbols-outlined { font-size: 20px; }
+  .tab-label { font-size: 9px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; }
+  .sidebar-bottom { border-top: 1px solid var(--divider); }
+
+  .panel {
+    flex: 1;
+    background: var(--glass-surface);
+    backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid var(--glass-border);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+
+  .topbar {
+    height: 44px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 12px;
+    border-bottom: 1px solid var(--divider);
+    background: rgba(255,255,255,0.25);
+  }
+  .topbar-title { font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; }
+  .topbar-title .lang { color: var(--on-surface-variant); font-weight: 500; }
+  .topbar-actions { display: flex; gap: 2px; }
+
+  .icon-btn {
+    width: 28px; height: 28px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 6px; border: 0; background: transparent; cursor: pointer;
+    color: var(--on-surface-variant);
+  }
+  .icon-btn:hover { background: rgba(0,0,0,0.06); color: var(--on-surface); }
+  .icon-btn .material-symbols-outlined { font-size: 16px; }
+
+  /* toolbar row */
+  .toolbar-row {
+    display: flex; gap: 6px; align-items: center;
+    padding: 12px;
+  }
+  .search-input {
+    flex: 1;
+    background: rgba(0,0,0,0.05);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+    border-radius: 8px;
+    height: 32px; padding: 0 8px;
+    display: flex; align-items: center;
+  }
+  .search-input .material-symbols-outlined { font-size: 16px; color: var(--on-surface-variant); margin-right: 6px; }
+  .search-input input { background: transparent; border: 0; outline: 0; flex: 1; font-size: 12px; color: var(--on-surface); font-family: 'Lato', serif; }
+  .search-input input::placeholder { color: rgba(76,69,70,0.4); }
+
+  .btn-icon-square {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 1px solid var(--outline-variant);
+    background: var(--surface-container-lowest);
+    color: var(--on-surface-variant);
+    cursor: pointer;
+  }
+  .btn-icon-square:hover { background: var(--surface-container-low); color: var(--on-surface); }
+  .btn-icon-square .material-symbols-outlined { font-size: 16px; }
+
+  .scroll-area {
+    flex: 1; overflow-y: auto;
+    padding-bottom: 12px;
+  }
+  .scroll-area::-webkit-scrollbar { width: 4px; }
+  .scroll-area::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.18); border-radius: 2px; }
+
+  /* group header */
+  .group-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 12px 6px;
+    margin-top: 4px;
+  }
+  .group-title {
+    display: flex; align-items: baseline; gap: 6px;
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--on-surface);
+  }
+  .group-title .count {
+    color: var(--on-surface-variant);
+    font-weight: 500;
+    letter-spacing: 0.05em;
+  }
+  .sort-select {
+    background: transparent; border: 0;
+    color: var(--on-surface-variant);
+    font-size: 10px; font-weight: 500;
+    letter-spacing: 0.05em; text-transform: uppercase;
+    cursor: pointer;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+
+  /* word row */
+  .word-list { display: flex; flex-direction: column; padding: 0 12px; }
+  .word-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    margin-bottom: 2px;
+    cursor: pointer;
+  }
+  .word-row:hover { background: rgba(0,0,0,0.04); }
+  .word-row.bulk {
+    border: 1px dashed var(--outline-variant);
+  }
+  .checkbox {
+    width: 16px; height: 16px; flex-shrink: 0;
+    border: 1.5px solid var(--outline-variant);
+    border-radius: 3px;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .checkbox.checked {
+    background: var(--primary); border-color: var(--primary);
+    color: var(--on-primary);
+  }
+  .checkbox.checked .material-symbols-outlined { font-size: 12px; }
+  .word-form { font-family: 'Lato', serif; font-size: 14px; flex-shrink: 0; min-width: 96px; }
+  .word-pos {
+    font-size: 10px; font-weight: 500;
+    letter-spacing: 0.05em; text-transform: uppercase;
+    color: var(--on-surface-variant);
+    flex: 1; min-width: 0;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .word-meta-right { font-size: 10px; color: var(--on-surface-variant); }
+
+  /* footer */
+  .footer {
+    flex-shrink: 0;
+    padding: 8px 12px;
+    border-top: 1px solid var(--divider);
+    background: rgba(255,255,255,0.2);
+    display: flex; gap: 6px; align-items: center;
+    font-size: 10px;
+  }
+  .footer .meta { flex: 1; color: var(--on-surface-variant); }
+  .btn-primary {
+    background: var(--primary); color: var(--on-primary);
+    border: 0; border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 10px; font-weight: 500;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    cursor: pointer;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .btn-outline {
+    background: transparent; color: var(--on-surface);
+    border: 1px solid var(--outline-variant); border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 10px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase;
+    cursor: pointer;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .btn-outline .material-symbols-outlined { font-size: 14px; }
+
+  /* context view */
+  .context-head {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--divider);
+  }
+  .context-head .word { font-family: 'Lato', serif; font-size: 18px; font-weight: 600; }
+  .context-head .meta { font-size: 10px; color: var(--on-surface-variant); letter-spacing: 0.08em; text-transform: uppercase; }
+
+  .context-card {
+    margin: 12px;
+    background: var(--surface-container-lowest);
+    border: 1px solid var(--outline-variant);
+    border-radius: 12px;
+    padding: 14px;
+  }
+  .context-card + .context-card { margin-top: 8px; }
+  .context-card .label {
+    font-size: 10px; font-weight: 600;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--on-surface-variant);
+    margin-bottom: 8px;
+    display: flex; justify-content: space-between;
+  }
+  .context-card .label .when { color: var(--on-surface-variant); font-weight: 500; letter-spacing: 0; text-transform: none; }
+  .context-card .quote {
+    font-family: 'Lato', serif;
+    font-style: italic;
+    font-size: 13px; line-height: 20px;
+    margin: 0 0 8px;
+  }
+  .context-card .quote mark {
+    background: rgba(0, 0, 0, 0.04);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.18);
+    padding: 0 1px;
+    color: inherit;
+  }
+  .context-card .src {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 11px;
+    color: var(--on-surface-variant);
+    font-family: 'Lato', serif;
+  }
+  .context-card .src a {
+    color: var(--primary); text-decoration: none;
+    border-bottom: 1px solid currentColor;
+    font-family: 'Inter', sans-serif;
+    font-size: 10px; font-weight: 500;
+    letter-spacing: 0.08em; text-transform: uppercase;
+  }
+
+  .annotation {
+    margin-top: 12px;
+    padding: 12px;
+    background: var(--surface-container-lowest);
+    border: 1px solid var(--outline-variant);
+    border-radius: 12px;
+    font-size: 11px;
+    line-height: 16px;
+    color: var(--on-surface-variant);
+  }
+  .annotation strong {
+    color: var(--on-surface); display: block; margin-bottom: 4px;
+    font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+  <main class="page">
+    <div class="breadcrumb"><a href="index.html">← All mockups</a></div>
+    <h1 class="page-title">Drawer — Word List</h1>
+    <p class="page-sub">生词本：按语言分组、过滤、排序、批量管理；点击进入"上下文视图"查看保存时所属引文。</p>
+
+    <div class="grid">
+
+      <!-- =========== Scene 1: list grouped by language =========== -->
+      <div>
+        <div class="scene">
+          <div class="scene-label">01 · List — grouped by language, with filter & sort</div>
+          <div class="drawer-wrap">
+            <nav class="sidebar">
+              <div class="sidebar-brand"><span class="brand-mark">Al</span></div>
+              <div class="tabs">
+                <a class="tab" href="drawer-lookup.html"><span class="material-symbols-outlined">search</span><span class="tab-label">Lookup</span></a>
+                <a class="tab" href="#"><span class="material-symbols-outlined">menu_book</span><span class="tab-label">Morph</span></a>
+                <a class="tab" href="drawer-inflections.html"><span class="material-symbols-outlined">table_view</span><span class="tab-label">Infl</span></a>
+                <a class="tab" href="#"><span class="material-symbols-outlined">format_quote</span><span class="tab-label">Usage</span></a>
+                <a class="tab disabled" href="#"><span class="material-symbols-outlined">account_tree</span><span class="tab-label">Tree</span></a>
+                <a class="tab" href="#"><span class="material-symbols-outlined">history_edu</span><span class="tab-label">Gram</span></a>
+                <a class="tab active" href="#"><span class="material-symbols-outlined">bookmark</span><span class="tab-label">List</span></a>
+              </div>
+              <div class="sidebar-bottom">
+                <a class="tab" href="drawer-auth.html"><span class="material-symbols-outlined">account_circle</span><span class="tab-label">User</span></a>
+                <a class="tab" href="drawer-settings.html"><span class="material-symbols-outlined">settings</span><span class="tab-label">Opts</span></a>
+              </div>
+            </nav>
+
+            <section class="panel">
+              <header class="topbar">
+                <div class="topbar-title">Alpheios <span class="lang">· Word List</span></div>
+                <div class="topbar-actions">
+                  <button class="icon-btn"><span class="material-symbols-outlined">close_fullscreen</span></button>
+                  <button class="icon-btn"><span class="material-symbols-outlined">more_vert</span></button>
+                  <button class="icon-btn"><span class="material-symbols-outlined">close</span></button>
+                </div>
+              </header>
+
+              <div class="toolbar-row">
+                <div class="search-input">
+                  <span class="material-symbols-outlined">filter_list</span>
+                  <input placeholder="Filter words…" />
+                </div>
+                <button class="btn-icon-square" title="Bulk select"><span class="material-symbols-outlined">checklist</span></button>
+                <button class="btn-icon-square" title="Import"><span class="material-symbols-outlined">file_upload</span></button>
+                <button class="btn-icon-square" title="Export"><span class="material-symbols-outlined">file_download</span></button>
+              </div>
+
+              <div class="scroll-area">
+
+                <div class="group-head">
+                  <div class="group-title">
+                    <span class="material-symbols-outlined" style="font-size:14px; vertical-align:middle;">expand_more</span>
+                    Latin <span class="count">· 24</span>
+                  </div>
+                  <button class="sort-select">
+                    Sort: A–Z <span class="material-symbols-outlined" style="font-size:14px;">unfold_more</span>
+                  </button>
+                </div>
+
+                <div class="word-list">
+                  <div class="word-row"><span class="word-form lang-classical">arma</span><span class="word-pos">noun · neuter · plural</span><span class="word-meta-right">3 ctx</span></div>
+                  <div class="word-row"><span class="word-form lang-classical">audeō</span><span class="word-pos">verb · 2nd · semi-deponent</span><span class="word-meta-right">1 ctx</span></div>
+                  <div class="word-row"><span class="word-form lang-classical">bellum</span><span class="word-pos">noun · neuter</span><span class="word-meta-right">5 ctx</span></div>
+                  <div class="word-row"><span class="word-form lang-classical">cano</span><span class="word-pos">verb · 3rd</span><span class="word-meta-right">2 ctx</span></div>
+                  <div class="word-row"><span class="word-form lang-classical">fātum</span><span class="word-pos">noun · neuter</span><span class="word-meta-right">4 ctx</span></div>
+                  <div class="word-row" style="background: rgba(0,0,0,0.04);"><span class="word-form lang-classical">profugus</span><span class="word-pos">adj · 1st/2nd</span><span class="word-meta-right">1 ctx</span></div>
+                  <div class="word-row"><span class="word-form lang-classical">Trōia</span><span class="word-pos">noun · feminine</span><span class="word-meta-right">2 ctx</span></div>
+                  <div class="word-row"><span class="word-form lang-classical">vir</span><span class="word-pos">noun · masculine</span><span class="word-meta-right">3 ctx</span></div>
+                </div>
+
+                <div class="group-head">
+                  <div class="group-title">
+                    <span class="material-symbols-outlined" style="font-size:14px;">chevron_right</span>
+                    Ancient Greek <span class="count">· 12</span>
+                  </div>
+                  <button class="sort-select">Sort: A–Z <span class="material-symbols-outlined" style="font-size:14px;">unfold_more</span></button>
+                </div>
+
+                <div class="group-head">
+                  <div class="group-title">
+                    <span class="material-symbols-outlined" style="font-size:14px;">chevron_right</span>
+                    Arabic <span class="count">· 3</span>
+                  </div>
+                  <button class="sort-select">Sort: Recent <span class="material-symbols-outlined" style="font-size:14px;">unfold_more</span></button>
+                </div>
+
+              </div>
+
+              <footer class="footer">
+                <span class="meta">39 saved · 3 languages</span>
+                <button class="btn-outline">Import</button>
+                <button class="btn-primary">Export all</button>
+              </footer>
+            </section>
+          </div>
+        </div>
+        <div class="annotation">
+          <strong>State · default list</strong>
+          按语言分组（默认仅展开第一组）。每行：词、词类标签、ctx 计数。Toolbar 提供 filter / bulk / 导入 / 导出。
+        </div>
+      </div>
+
+      <!-- =========== Scene 2: context view (clicked into a word) =========== -->
+      <div>
+        <div class="scene">
+          <div class="scene-label">02 · Context view — citations attached to a word</div>
+          <div class="drawer-wrap">
+            <nav class="sidebar">
+              <div class="sidebar-brand"><span class="brand-mark">Al</span></div>
+              <div class="tabs">
+                <a class="tab" href="drawer-lookup.html"><span class="material-symbols-outlined">search</span><span class="tab-label">Lookup</span></a>
+                <a class="tab" href="#"><span class="material-symbols-outlined">menu_book</span><span class="tab-label">Morph</span></a>
+                <a class="tab" href="drawer-inflections.html"><span class="material-symbols-outlined">table_view</span><span class="tab-label">Infl</span></a>
+                <a class="tab" href="#"><span class="material-symbols-outlined">format_quote</span><span class="tab-label">Usage</span></a>
+                <a class="tab disabled" href="#"><span class="material-symbols-outlined">account_tree</span><span class="tab-label">Tree</span></a>
+                <a class="tab" href="#"><span class="material-symbols-outlined">history_edu</span><span class="tab-label">Gram</span></a>
+                <a class="tab active" href="#"><span class="material-symbols-outlined">bookmark</span><span class="tab-label">List</span></a>
+              </div>
+              <div class="sidebar-bottom">
+                <a class="tab" href="drawer-auth.html"><span class="material-symbols-outlined">account_circle</span><span class="tab-label">User</span></a>
+                <a class="tab" href="drawer-settings.html"><span class="material-symbols-outlined">settings</span><span class="tab-label">Opts</span></a>
+              </div>
+            </nav>
+
+            <section class="panel">
+              <header class="topbar">
+                <div class="topbar-title">Alpheios <span class="lang">· Word List</span></div>
+                <div class="topbar-actions">
+                  <button class="icon-btn"><span class="material-symbols-outlined">close_fullscreen</span></button>
+                  <button class="icon-btn"><span class="material-symbols-outlined">close</span></button>
+                </div>
+              </header>
+
+              <div class="context-head">
+                <button class="icon-btn" title="Back to list"><span class="material-symbols-outlined">arrow_back</span></button>
+                <span class="word lang-classical">arma</span>
+                <span style="background: var(--secondary-container); color: var(--on-secondary-container); border-radius: 9999px; padding: 2px 8px; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;">Latin</span>
+                <span style="margin-left: auto;" class="meta">3 contexts</span>
+              </div>
+
+              <div class="scroll-area">
+
+                <div class="context-card">
+                  <div class="label">
+                    <span>Context · 1</span>
+                    <span class="when">added 2 days ago</span>
+                  </div>
+                  <p class="quote lang-classical">
+                    <mark>Arma</mark> virumque cano, Troiae qui primus ab oris Italiam, fato profugus, Laviniaque venit litora…
+                  </p>
+                  <div class="src">
+                    <span>— Virgil, <em>Aeneid</em> 1.1</span>
+                    <a href="#">Open source →</a>
+                  </div>
+                </div>
+
+                <div class="context-card">
+                  <div class="label">
+                    <span>Context · 2</span>
+                    <span class="when">added last week</span>
+                  </div>
+                  <p class="quote lang-classical">
+                    Sumite materiam vestris, qui scribitis, aequam viribus, et versate diu, quid ferre recusent, quid valeant umeri… <mark>arma</mark> minora viris.
+                  </p>
+                  <div class="src">
+                    <span>— Horace, <em>Ars Poetica</em> 38</span>
+                    <a href="#">Open source →</a>
+                  </div>
+                </div>
+
+                <div class="context-card">
+                  <div class="label">
+                    <span>Context · 3</span>
+                    <span class="when">added Apr 12</span>
+                  </div>
+                  <p class="quote lang-classical">
+                    Sed iam <mark>arma</mark> ipsa ferarum vis et impetus suos vincere…
+                  </p>
+                  <div class="src">
+                    <span>— Cicero, <em>De Officiis</em> 1.34</span>
+                    <a href="#">Open source →</a>
+                  </div>
+                </div>
+
+              </div>
+
+              <footer class="footer">
+                <span class="meta">arma · Latin · 3 contexts</span>
+                <button class="btn-outline" style="color: var(--error); border-color: rgba(186, 26, 26, 0.4);">
+                  <span class="material-symbols-outlined">delete</span>
+                  Remove
+                </button>
+                <button class="btn-primary">
+                  <span class="material-symbols-outlined" style="font-size:14px;">open_in_new</span>
+                  Lookup again
+                </button>
+              </footer>
+            </section>
+          </div>
+        </div>
+        <div class="annotation">
+          <strong>State · context view</strong>
+          点击 word row 进入此视图，替换主内容区。顶部返回箭头 + 当前词 + 语言徽标。每条引文 elevated card，含命中词 mark + 来源链接。底部 actions：删除 / 重新查询。
+        </div>
+      </div>
+
+    </div>
+  </main>
+</body>
+</html>

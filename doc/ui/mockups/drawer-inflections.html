@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Alpheios — Drawer · Inflections</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Lato:ital,wght@0,400;0,700;1,400&family=Material+Symbols+Outlined:opsz,wght,FILL@20,400,0..1&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --surface: #f9f9fb;
+    --surface-container-lowest: #ffffff;
+    --surface-container-low: #f3f3f5;
+    --surface-container: #edeef0;
+    --surface-container-high: #e8e8ea;
+    --on-surface: #1a1c1d;
+    --on-surface-variant: #4c4546;
+    --glass-surface: rgba(255, 255, 255, 0.55);
+    --glass-surface-low: rgba(255, 255, 255, 0.35);
+    --glass-border: rgba(255, 255, 255, 0.6);
+    --glass-shadow: rgba(0, 0, 0, 0.08);
+    --primary: #000000;
+    --on-primary: #ffffff;
+    --secondary-container: #e1dfdf;
+    --on-secondary-container: #3a3a3a;
+    --tertiary: #0e6b4f;
+    --outline: #7e7576;
+    --outline-variant: #cfc4c5;
+    --divider: rgba(0, 0, 0, 0.06);
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    color: var(--on-surface);
+    background: var(--surface);
+    font-size: 12px; line-height: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .lang-classical { font-family: 'Lato', 'Noto Serif', serif; }
+
+  .page { max-width: 1280px; margin: 0 auto; padding: 32px; }
+  .page-title { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 4px; }
+  .page-sub { color: var(--on-surface-variant); margin: 0 0 32px; font-size: 13px; }
+  .breadcrumb { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--on-surface-variant); margin-bottom: 16px; }
+  .breadcrumb a { color: inherit; text-decoration: none; border-bottom: 1px solid var(--outline-variant); }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+  @media (max-width: 1100px) { .grid { grid-template-columns: 1fr; } }
+
+  /* drawer in scene */
+  .scene {
+    background: var(--surface-container-low);
+    border: 1px solid var(--outline-variant);
+    border-radius: 16px;
+    padding: 16px;
+  }
+  .scene-label {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--on-surface-variant); margin-bottom: 12px;
+  }
+
+  .drawer-wrap {
+    display: flex;
+    height: 720px;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 12px 40px var(--glass-shadow);
+  }
+  .sidebar {
+    width: 64px; flex-shrink: 0;
+    background: var(--glass-surface-low);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid var(--glass-border);
+    border-right: 0;
+    display: flex; flex-direction: column;
+  }
+  .sidebar-brand {
+    height: 44px;
+    display: flex; align-items: center; justify-content: center;
+    border-bottom: 1px solid var(--divider);
+  }
+  .brand-mark {
+    width: 28px; height: 28px; border-radius: 6px;
+    background: var(--primary); color: var(--on-primary);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 11px;
+  }
+  .tabs { flex: 1; display: flex; flex-direction: column; }
+  .tab {
+    position: relative;
+    height: 56px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 4px;
+    background: transparent;
+    border: 0; border-left: 1.5px solid transparent;
+    color: var(--on-surface-variant);
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .tab:hover { background: rgba(0,0,0,0.04); color: var(--on-surface); }
+  .tab.active {
+    background: rgba(0,0,0,0.06);
+    border-left-color: var(--on-surface);
+    color: var(--on-surface);
+  }
+  .tab.disabled { opacity: 0.32; cursor: not-allowed; }
+  .tab .material-symbols-outlined { font-size: 20px; }
+  .tab-label { font-size: 9px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; }
+  .sidebar-bottom { border-top: 1px solid var(--divider); }
+
+  .panel {
+    flex: 1;
+    background: var(--glass-surface);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid var(--glass-border);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+
+  .topbar {
+    height: 44px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 12px;
+    border-bottom: 1px solid var(--divider);
+    background: rgba(255,255,255,0.25);
+  }
+  .topbar-title {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase;
+  }
+  .topbar-title .lang { color: var(--on-surface-variant); font-weight: 500; }
+  .topbar-actions { display: flex; gap: 2px; }
+
+  .icon-btn {
+    width: 28px; height: 28px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 6px; border: 0; background: transparent; cursor: pointer;
+    color: var(--on-surface-variant);
+  }
+  .icon-btn:hover { background: rgba(0,0,0,0.06); color: var(--on-surface); }
+  .icon-btn .material-symbols-outlined { font-size: 16px; }
+
+  .scroll-area {
+    flex: 1; overflow-y: auto;
+    padding-bottom: 12px;
+  }
+  .scroll-area::-webkit-scrollbar { width: 4px; }
+  .scroll-area::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.18); border-radius: 2px; }
+
+  /* page header inside drawer */
+  .page-head {
+    padding: 12px;
+    border-bottom: 1px solid var(--divider);
+  }
+  .page-head h2 {
+    font-size: 16px; font-weight: 600; letter-spacing: -0.01em;
+    margin: 0 0 4px;
+  }
+  .page-head .sub {
+    color: var(--on-surface-variant);
+    font-size: 11px;
+  }
+  .page-head .lang-classical { font-style: italic; }
+
+  /* segmented */
+  .segmented {
+    display: inline-flex;
+    background: rgba(0,0,0,0.05);
+    border-radius: 8px;
+    padding: 2px;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+  }
+  .segmented button {
+    background: transparent; border: 0;
+    padding: 6px 10px;
+    font-size: 10px; font-weight: 500;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--on-surface-variant);
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .segmented button.active {
+    background: var(--surface-container-lowest);
+    color: var(--on-surface);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    font-weight: 600;
+  }
+
+  /* filter chips */
+  .chip-row { display: flex; gap: 4px; flex-wrap: wrap; padding: 8px 12px; }
+  .chip {
+    background: rgba(0,0,0,0.05);
+    color: var(--on-surface-variant);
+    border-radius: 9999px;
+    padding: 4px 10px;
+    font-size: 10px; font-weight: 500;
+    letter-spacing: 0.05em; text-transform: uppercase;
+    cursor: pointer; border: 0;
+  }
+  .chip:hover { background: rgba(0,0,0,0.08); }
+  .chip.active {
+    background: var(--primary); color: var(--on-primary);
+  }
+  .chip.tertiary {
+    background: rgba(14,107,79,0.12); color: var(--tertiary);
+  }
+
+  /* inflection table */
+  .infl-table-wrap {
+    margin: 12px;
+    overflow-x: auto;
+    border: 1px solid var(--outline-variant);
+    border-radius: 8px;
+  }
+  table.infl-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+  }
+  table.infl-table th, table.infl-table td {
+    padding: 6px 8px;
+    text-align: left;
+    border-bottom: 1px solid var(--divider);
+    border-right: 1px solid var(--divider);
+  }
+  table.infl-table th:last-child, table.infl-table td:last-child { border-right: 0; }
+  table.infl-table thead th {
+    background: var(--surface-container-high);
+    font-weight: 600;
+    font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase;
+    color: var(--on-surface-variant);
+  }
+  table.infl-table tbody tr:nth-child(even) { background: var(--surface-container-low); }
+  table.infl-table tbody tr.row-head th {
+    background: var(--surface-container);
+    font-size: 10px;
+  }
+  table.infl-table tbody td {
+    font-family: 'Lato', serif;
+    color: var(--on-surface);
+  }
+  table.infl-table td.match {
+    background: rgba(14,107,79,0.10);
+    border-left: 1.5px solid var(--tertiary);
+    font-weight: 700;
+    color: var(--tertiary);
+    position: relative;
+  }
+  table.infl-table .form-secondary {
+    display: block;
+    color: var(--on-surface-variant);
+    font-size: 10px;
+    font-style: italic;
+  }
+  table.infl-table tfoot td {
+    background: var(--surface-container-low);
+    font-size: 10px;
+    color: var(--on-surface-variant);
+    font-style: italic;
+  }
+
+  /* legend */
+  .legend {
+    display: flex; gap: 12px; flex-wrap: wrap;
+    padding: 6px 12px;
+    font-size: 10px; color: var(--on-surface-variant);
+  }
+  .legend .swatch {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 2px;
+    background: rgba(14,107,79,0.6);
+    margin-right: 4px; vertical-align: middle;
+  }
+
+  /* footnote section */
+  .h-section {
+    font-size: 10px; font-weight: 600;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--on-surface-variant);
+    padding: 10px 12px 6px;
+  }
+  .footnote-row {
+    display: grid;
+    grid-template-columns: 24px 1fr;
+    gap: 8px;
+    padding: 6px 12px;
+    font-size: 11px;
+    color: var(--on-surface-variant);
+  }
+  .footnote-row .num { color: var(--tertiary); font-weight: 600; }
+
+  /* picker steps */
+  .picker-step {
+    margin: 12px;
+    background: var(--surface-container-lowest);
+    border: 1px solid var(--outline-variant);
+    border-radius: 10px;
+    padding: 12px;
+  }
+  .picker-step + .picker-step { margin-top: 8px; }
+  .picker-step .step-num {
+    display: inline-flex;
+    align-items: center; justify-content: center;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: var(--primary); color: var(--on-primary);
+    font-size: 10px; font-weight: 700;
+    margin-right: 8px;
+  }
+  .picker-step.disabled { opacity: 0.5; }
+  .picker-step.disabled .step-num { background: var(--outline-variant); color: var(--on-surface-variant); }
+  .picker-step h4 {
+    margin: 0 0 8px;
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 0.05em;
+    display: flex; align-items: center;
+  }
+  .picker-step .options { display: flex; flex-wrap: wrap; gap: 4px; }
+  .picker-step .opt {
+    padding: 4px 10px;
+    border: 1px solid var(--outline-variant);
+    background: transparent;
+    border-radius: 9999px;
+    font-size: 11px;
+    cursor: pointer;
+  }
+  .picker-step .opt:hover { border-color: var(--on-surface); }
+  .picker-step .opt.selected {
+    border-color: var(--on-surface);
+    background: var(--on-surface);
+    color: var(--on-primary);
+  }
+  .picker-step .picker-meta {
+    margin-top: 8px;
+    font-size: 10px;
+    color: var(--on-surface-variant);
+    font-style: italic;
+  }
+
+  .empty-preview {
+    margin: 12px;
+    padding: 24px 16px;
+    border: 1px dashed var(--outline-variant);
+    border-radius: 10px;
+    text-align: center;
+    color: var(--on-surface-variant);
+  }
+  .empty-preview .material-symbols-outlined {
+    font-size: 28px;
+    opacity: 0.5;
+    margin-bottom: 8px;
+    display: block;
+  }
+  .empty-preview p { margin: 4px 0; font-size: 12px; }
+
+  .footer {
+    flex-shrink: 0;
+    padding: 8px 12px;
+    border-top: 1px solid var(--divider);
+    background: rgba(255,255,255,0.2);
+    display: flex; gap: 6px; align-items: center;
+    font-size: 10px;
+  }
+  .footer .meta {
+    flex: 1;
+    color: var(--on-surface-variant);
+    font-size: 10px;
+  }
+  .btn-outline {
+    background: transparent;
+    color: var(--on-surface);
+    border: 1px solid var(--outline-variant);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 10px; font-weight: 500;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    cursor: pointer;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .btn-outline .material-symbols-outlined { font-size: 14px; }
+
+  .annotation {
+    margin-top: 12px;
+    padding: 12px;
+    background: var(--surface-container-lowest);
+    border: 1px solid var(--outline-variant);
+    border-radius: 12px;
+    font-size: 11px;
+    line-height: 16px;
+    color: var(--on-surface-variant);
+  }
+  .annotation strong {
+    color: var(--on-surface); display: block; margin-bottom: 4px;
+    font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+  <main class="page">
+    <div class="breadcrumb"><a href="index.html">← All mockups</a></div>
+    <h1 class="page-title">Drawer — Inflections & Inflections Browser</h1>
+    <p class="page-sub">两种入口：① 命中词驱动的变形表（自动高亮当前 form）；② 独立 Browser，用三步 picker 浏览所有范式。</p>
+
+    <div class="grid">
+
+      <!-- =========== Scene 1: Inflections from lookup =========== -->
+      <div>
+        <div class="scene">
+          <div class="scene-label">01 · Inflections from lookup — current form highlighted</div>
+          <div class="drawer-wrap">
+            <nav class="sidebar">
+              <div class="sidebar-brand"><span class="brand-mark">Al</span></div>
+              <div class="tabs">
+                <a class="tab" href="drawer-lookup.html"><span class="material-symbols-outlined">search</span><span class="tab-label">Lookup</span></a>
+                <a class="tab" href="#"><span class="material-symbols-outlined">menu_book</span><span class="tab-label">Morph</span></a>
+                <a class="tab active" href="#"><span class="material-symbols-outlined">table_view</span><span class="tab-label">Infl</span></a>
+                <a class="tab" href="#"><span class="material-symbols-outlined">format_quote</span><span class="tab-label">Usage</span></a>
+                <a class="tab disabled" href="#"><span class="material-symbols-outlined">account_tree</span><span class="tab-label">Tree</span></a>
+                <a class="tab" href="#"><span class="material-symbols-outlined">history_edu</span><span class="tab-label">Gram</span></a>
+                <a class="tab" href="drawer-wordlist.html"><span class="material-symbols-outlined">bookmark</span><span class="tab-label">List</span></a>
+              </div>
+              <div class="sidebar-bottom">
+                <a class="tab" href="drawer-auth.html"><span class="material-symbols-outlined">account_circle</span><span class="tab-label">User</span></a>
+                <a class="tab" href="drawer-settings.html"><span class="material-symbols-outlined">settings</span><span class="tab-label">Opts</span></a>
+              </div>
+            </nav>
+
+            <section class="panel">
+              <header class="topbar">
+                <div class="topbar-title">Alpheios <span class="lang">· Inflections</span></div>
+                <div class="topbar-actions">
+                  <button class="icon-btn"><span class="material-symbols-outlined">close_fullscreen</span></button>
+                  <button class="icon-btn"><span class="material-symbols-outlined">close</span></button>
+                </div>
+              </header>
+
+              <div class="page-head">
+                <h2><span class="lang-classical">arma</span> · noun, 2nd declension</h2>
+                <p class="sub">Showing the paradigm for <span class="lang-classical">arma, -ōrum</span>. Current form: <span style="color:var(--tertiary);font-weight:600;">nom./acc./voc. plural</span></p>
+              </div>
+
+              <div style="display:flex; align-items:center; justify-content:space-between; padding: 10px 12px;">
+                <div class="segmented" role="tablist">
+                  <button>Verb</button>
+                  <button class="active">Noun</button>
+                </div>
+                <div class="segmented">
+                  <button class="active">Wide</button>
+                  <button>Narrow</button>
+                </div>
+              </div>
+
+              <div class="chip-row">
+                <button class="chip active">Nominal</button>
+                <button class="chip">Adjectival</button>
+                <button class="chip">Pronominal</button>
+                <button class="chip tertiary">Highlight matches</button>
+              </div>
+
+              <div class="scroll-area">
+                <div class="infl-table-wrap">
+                  <table class="infl-table">
+                    <thead>
+                      <tr>
+                        <th>Case</th>
+                        <th>Singular</th>
+                        <th>Plural</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr><th class="row-head">Nominative</th><td class="lang-classical">armum</td><td class="match lang-classical">arma <span class="form-secondary">— current</span></td></tr>
+                      <tr><th class="row-head">Genitive</th><td class="lang-classical">armī</td><td class="lang-classical">armōrum</td></tr>
+                      <tr><th class="row-head">Dative</th><td class="lang-classical">armō</td><td class="lang-classical">armīs</td></tr>
+                      <tr><th class="row-head">Accusative</th><td class="lang-classical">armum</td><td class="match lang-classical">arma</td></tr>
+                      <tr><th class="row-head">Ablative</th><td class="lang-classical">armō</td><td class="lang-classical">armīs</td></tr>
+                      <tr><th class="row-head">Vocative</th><td class="lang-classical">armum</td><td class="match lang-classical">arma</td></tr>
+                    </tbody>
+                    <tfoot>
+                      <tr><td colspan="3">¹ Stem -ar; gender neuter; only attested in plural in classical authors.</td></tr>
+                    </tfoot>
+                  </table>
+                </div>
+
+                <div class="legend">
+                  <span><span class="swatch"></span> highlighted = matches the queried form</span>
+                </div>
+
+                <div class="h-section">Footnotes</div>
+                <div class="footnote-row"><span class="num">1.</span><span><em class="lang-classical">arma</em> is overwhelmingly attested as a <em>plurale tantum</em> in poetry (Verg., Ov.).</span></div>
+                <div class="footnote-row"><span class="num">2.</span><span>The singular forms are reconstructed; cf. Lewis &amp; Short s.v.</span></div>
+
+                <div class="h-section">Credits</div>
+                <div style="padding: 0 12px 12px; font-size: 11px; color: var(--on-surface-variant);">
+                  Latin paradigms via the <em>Alpheios Latin Inflection Tables</em>, derived from Allen &amp; Greenough (1903).
+                </div>
+              </div>
+
+              <footer class="footer">
+                <span class="meta">arma · 6 cases · 2 numbers</span>
+                <button class="btn-outline"><span class="material-symbols-outlined">download</span>Export</button>
+                <button class="btn-outline"><span class="material-symbols-outlined">print</span></button>
+              </footer>
+            </section>
+          </div>
+        </div>
+        <div class="annotation">
+          <strong>State · matched paradigm</strong>
+          顶部双 segmented：词类 + 表格密度。命中 cell 用 tertiary 高亮 + 1.5px 左竖线 + "current" 副标。Footnote 与 credits 内联展示。
+        </div>
+      </div>
+
+      <!-- =========== Scene 2: Inflections Browser =========== -->
+      <div>
+        <div class="scene">
+          <div class="scene-label">02 · Inflections Browser — pick paradigm without lookup</div>
+          <div class="drawer-wrap">
+            <nav class="sidebar">
+              <div class="sidebar-brand"><span class="brand-mark">Al</span></div>
+              <div class="tabs">
+                <a class="tab" href="drawer-lookup.html"><span class="material-symbols-outlined">search</span><span class="tab-label">Lookup</span></a>
+                <a class="tab" href="#"><span class="material-symbols-outlined">menu_book</span><span class="tab-label">Morph</span></a>
+                <a class="tab active" href="#"><span class="material-symbols-outlined">table_view</span><span class="tab-label">Infl</span></a>
+                <a class="tab" href="#"><span class="material-symbols-outlined">format_quote</span><span class="tab-label">Usage</span></a>
+                <a class="tab disabled" href="#"><span class="material-symbols-outlined">account_tree</span><span class="tab-label">Tree</span></a>
+                <a class="tab" href="#"><span class="material-symbols-outlined">history_edu</span><span class="tab-label">Gram</span></a>
+                <a class="tab" href="drawer-wordlist.html"><span class="material-symbols-outlined">bookmark</span><span class="tab-label">List</span></a>
+              </div>
+              <div class="sidebar-bottom">
+                <a class="tab" href="drawer-auth.html"><span class="material-symbols-outlined">account_circle</span><span class="tab-label">User</span></a>
+                <a class="tab" href="drawer-settings.html"><span class="material-symbols-outlined">settings</span><span class="tab-label">Opts</span></a>
+              </div>
+            </nav>
+
+            <section class="panel">
+              <header class="topbar">
+                <div class="topbar-title">Alpheios <span class="lang">· Inflections Browser</span></div>
+                <div class="topbar-actions">
+                  <button class="icon-btn"><span class="material-symbols-outlined">refresh</span></button>
+                  <button class="icon-btn"><span class="material-symbols-outlined">close</span></button>
+                </div>
+              </header>
+
+              <div class="page-head">
+                <h2>Browse paradigms</h2>
+                <p class="sub">No lookup needed. Pick a language, a part of speech, and a paradigm to inspect.</p>
+              </div>
+
+              <div class="scroll-area">
+
+                <div class="picker-step">
+                  <h4><span class="step-num">1</span>Language</h4>
+                  <div class="options">
+                    <button class="opt selected">Latin</button>
+                    <button class="opt">Ancient Greek</button>
+                    <button class="opt">Arabic</button>
+                    <button class="opt">Persian</button>
+                    <button class="opt">Sanskrit</button>
+                    <button class="opt">Old English</button>
+                  </div>
+                </div>
+
+                <div class="picker-step">
+                  <h4><span class="step-num">2</span>Part of speech</h4>
+                  <div class="options">
+                    <button class="opt">Noun</button>
+                    <button class="opt selected">Verb</button>
+                    <button class="opt">Adjective</button>
+                    <button class="opt">Pronoun</button>
+                    <button class="opt">Adverb</button>
+                  </div>
+                </div>
+
+                <div class="picker-step">
+                  <h4><span class="step-num">3</span>Paradigm</h4>
+                  <div class="options">
+                    <button class="opt selected">1st conjugation — <em class="lang-classical">amō</em></button>
+                    <button class="opt">2nd — <em class="lang-classical">moneō</em></button>
+                    <button class="opt">3rd — <em class="lang-classical">regō</em></button>
+                    <button class="opt">3rd-iō — <em class="lang-classical">capiō</em></button>
+                    <button class="opt">4th — <em class="lang-classical">audiō</em></button>
+                    <button class="opt">Sum, esse</button>
+                  </div>
+                  <div class="picker-meta">Showing active indicative forms by default. Toggle voices &amp; moods in the table.</div>
+                </div>
+
+                <div class="h-section">Preview</div>
+
+                <div class="infl-table-wrap">
+                  <table class="infl-table">
+                    <thead>
+                      <tr>
+                        <th>Person</th>
+                        <th>Present</th>
+                        <th>Imperfect</th>
+                        <th>Future</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr><th class="row-head">1 sg.</th><td class="lang-classical">amō</td><td class="lang-classical">amābam</td><td class="lang-classical">amābō</td></tr>
+                      <tr><th class="row-head">2 sg.</th><td class="lang-classical">amās</td><td class="lang-classical">amābās</td><td class="lang-classical">amābis</td></tr>
+                      <tr><th class="row-head">3 sg.</th><td class="lang-classical">amat</td><td class="lang-classical">amābat</td><td class="lang-classical">amābit</td></tr>
+                      <tr><th class="row-head">1 pl.</th><td class="lang-classical">amāmus</td><td class="lang-classical">amābāmus</td><td class="lang-classical">amābimus</td></tr>
+                      <tr><th class="row-head">2 pl.</th><td class="lang-classical">amātis</td><td class="lang-classical">amābātis</td><td class="lang-classical">amābitis</td></tr>
+                      <tr><th class="row-head">3 pl.</th><td class="lang-classical">amant</td><td class="lang-classical">amābant</td><td class="lang-classical">amābunt</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div class="chip-row" style="padding-top:0;">
+                  <button class="chip active">Active</button>
+                  <button class="chip">Passive</button>
+                  <span style="width:8px;"></span>
+                  <button class="chip active">Indicative</button>
+                  <button class="chip">Subjunctive</button>
+                  <button class="chip">Imperative</button>
+                </div>
+              </div>
+
+              <footer class="footer">
+                <span class="meta">amō · 1st conj. · active · indicative</span>
+                <button class="btn-outline"><span class="material-symbols-outlined">link</span>Copy link</button>
+              </footer>
+            </section>
+          </div>
+        </div>
+        <div class="annotation">
+          <strong>State · browser mode</strong>
+          三步 picker（Language → POS → Paradigm）+ 实时 preview 表格。voice / mood 用 chip 切换。同一表格组件复用 §6.6。
+        </div>
+      </div>
+
+    </div>
+  </main>
+</body>
+</html>

@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-highest": "#e2e2e4",
+                        "on-primary-container": "#848484",
+                        "secondary-fixed": "#e4e2e2",
+                        "on-secondary-fixed-variant": "#464747",
+                        "surface-tint": "#5e5e5e",
+                        "on-error": "#ffffff",
+                        "tertiary-container": "#1b1b1b",
+                        "primary": "#000000",
+                        "on-primary-fixed-variant": "#474747",
+                        "on-secondary-fixed": "#1b1c1c",
+                        "error-container": "#ffdad6",
+                        "on-primary-fixed": "#1b1b1b",
+                        "inverse-on-surface": "#f0f0f2",
+                        "inverse-surface": "#2f3132",
+                        "on-surface-variant": "#4c4546",
+                        "surface-variant": "#e2e2e4",
+                        "on-tertiary-fixed-variant": "#474747",
+                        "on-error-container": "#93000a",
+                        "surface-bright": "#f9f9fb",
+                        "error": "#ba1a1a",
+                        "tertiary": "#000000",
+                        "primary-container": "#1b1b1b",
+                        "secondary-fixed-dim": "#c7c6c6",
+                        "surface-container": "#eeeef0",
+                        "surface-container-low": "#f3f3f5",
+                        "on-secondary-container": "#626262",
+                        "on-tertiary": "#ffffff",
+                        "outline": "#7e7576",
+                        "background": "#f9f9fb",
+                        "on-tertiary-fixed": "#1b1b1b",
+                        "primary-fixed-dim": "#c6c6c6",
+                        "on-surface": "#1a1c1d",
+                        "on-tertiary-container": "#848484",
+                        "on-background": "#1a1c1d",
+                        "surface-container-high": "#e8e8ea",
+                        "tertiary-fixed": "#e2e2e2",
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed-dim": "#c6c6c6",
+                        "surface": "#f9f9fb",
+                        "primary-fixed": "#e2e2e2",
+                        "secondary-container": "#e1dfdf",
+                        "on-secondary": "#ffffff",
+                        "outline-variant": "#cfc4c5",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-dim": "#d9dadc",
+                        "secondary": "#5e5e5e",
+                        "inverse-primary": "#c6c6c6"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "tight-gap": "4px",
+                        "stack-margin": "16px",
+                        "element-gap": "8px",
+                        "unit": "4px",
+                        "container-padding": "12px"
+                    },
+                    "fontFamily": {
+                        "body-sm": ["Inter"],
+                        "heading-sm": ["Inter"],
+                        "data-mono": ["Inter"],
+                        "label-xs": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0em", "fontWeight": "400"}],
+                        "heading-sm": ["13px", {"lineHeight": "16px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "data-mono": ["11px", {"lineHeight": "14px", "letterSpacing": "-0.02em", "fontWeight": "400"}],
+                        "label-xs": ["10px", {"lineHeight": "12px", "letterSpacing": "0.02em", "fontWeight": "500"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+            font-size: 18px;
+        }
+        .frosted-glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.4), 0 8px 32px 0 rgba(0, 0, 0, 0.08);
+        }
+        .inner-glow {
+            box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.5);
+        }
+        .recessed-well {
+            background: rgba(0, 0, 0, 0.05);
+            box-shadow: inset 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+        .selected-indicator {
+            position: relative;
+        }
+        .selected-indicator::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 25%;
+            bottom: 25%;
+            width: 1.5px;
+            background-color: currentColor;
+        }
+    </style>
+</head>
+<body class="bg-surface font-body-sm text-on-background overflow-hidden h-screen w-screen flex items-stretch justify-end">
+<!-- Mock Web Page Background Content -->
+<div class="fixed inset-0 z-0 overflow-hidden p-12 select-none pointer-events-none opacity-20 scale-110">
+<div class="max-w-4xl mx-auto space-y-8">
+<h1 class="text-4xl font-bold tracking-tight">Arma virumque cano...</h1>
+<p class="text-xl leading-relaxed">Arma virumque cano, Troiae qui primus ab oris Italiam, fato profugus, Laviniaque venit litora, multum ille et terris iactatus et alto vi superum saevae memorem Iunonis ob iram; multa quoque et bello passus, dum conderet urbem, inferretque deos Latio, genus unde Latinum, Albanique patres, atque altae moenia Romae.</p>
+<div class="grid grid-cols-2 gap-4">
+<div class="h-64 bg-surface-container rounded-lg"></div>
+<div class="h-64 bg-surface-container-high rounded-lg"></div>
+</div>
+</div>
+</div>
+<!-- Side Navigation Bar (Shared Component Strategy) -->
+<nav class="fixed left-0 top-0 bottom-0 z-50 flex flex-col items-center bg-white/10 backdrop-blur-[20px] saturate-[180%] text-slate-900 font-['Inter'] text-[13px] leading-tight antialiased h-full w-[64px] border-r border-white/20 divide-y divide-black/5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.4)]">
+<div class="py-4 mb-4">
+<span class="text-sm font-semibold tracking-tighter text-slate-900">Al</span>
+</div>
+<div class="w-full flex flex-col items-stretch">
+<!-- Search Tab (Active) -->
+<button class="bg-black/10 border-l-[1.5px] border-slate-900 flex flex-col items-center justify-center py-4 hover:bg-black/5 transition-colors duration-200 active:scale-95 transition-transform">
+<span class="material-symbols-outlined mb-1" data-icon="search">search</span>
+<span class="text-[9px] uppercase tracking-tighter opacity-80">Search</span>
+</button>
+<button class="text-slate-500 flex flex-col items-center justify-center py-4 opacity-70 hover:bg-black/5 transition-colors duration-200 active:scale-95 transition-transform">
+<span class="material-symbols-outlined mb-1" data-icon="menu_book">menu_book</span>
+<span class="text-[9px] uppercase tracking-tighter">Morph</span>
+</button>
+<button class="text-slate-500 flex flex-col items-center justify-center py-4 opacity-70 hover:bg-black/5 transition-colors duration-200 active:scale-95 transition-transform">
+<span class="material-symbols-outlined mb-1" data-icon="translate">translate</span>
+<span class="text-[9px] uppercase tracking-tighter">Def</span>
+</button>
+<button class="text-slate-500 flex flex-col items-center justify-center py-4 opacity-70 hover:bg-black/5 transition-colors duration-200 active:scale-95 transition-transform">
+<span class="material-symbols-outlined mb-1" data-icon="history">history</span>
+<span class="text-[9px] uppercase tracking-tighter">Hist</span>
+</button>
+</div>
+<div class="mt-auto w-full">
+<button class="text-slate-500 w-full flex flex-col items-center justify-center py-4 opacity-70 hover:bg-black/5 transition-colors duration-200">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+</div>
+</nav>
+<!-- Main Panel Container -->
+<main class="relative z-10 w-[320px] h-screen frosted-glass flex flex-col shadow-2xl ml-[64px]">
+<!-- TopAppBar (Shared Component Strategy) -->
+<header class="flex justify-between items-center px-3 w-full h-11 border-b border-black/5 bg-white/20 backdrop-blur-[20px] saturate-[180%] font-['Inter'] text-xs font-medium uppercase tracking-widest text-slate-900 shadow-sm sticky top-0 z-50">
+<div class="flex items-center gap-2">
+<span class="text-xs font-bold tracking-widest text-slate-900">Alpheios</span>
+</div>
+<div class="flex items-center gap-3">
+<button class="cursor-pointer hover:opacity-80 transition-opacity">
+<span class="material-symbols-outlined" data-icon="close">close</span>
+</button>
+<button class="cursor-pointer hover:opacity-80 transition-opacity">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+</header>
+<!-- Search Section -->
+<div class="px-container-padding py-stack-margin">
+<div class="recessed-well rounded-lg flex items-center px-tight-gap h-8 group focus-within:ring-1 focus-within:ring-slate-400/30 transition-all">
+<span class="material-symbols-outlined text-on-surface-variant/50 px-2" data-icon="search">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-body-sm w-full font-body-sm placeholder:text-on-surface-variant/40" placeholder="arma" readonly="" type="text"/>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto custom-scrollbar">
+<!-- Result Header -->
+<section class="px-container-padding pb-element-gap">
+<div class="flex items-baseline justify-between mb-unit">
+<h2 class="font-heading-sm text-heading-sm text-primary tracking-tight">arma</h2>
+<span class="font-label-xs text-label-xs text-on-secondary-container bg-secondary-container px-1.5 py-0.5 rounded-full">Latin</span>
+</div>
+<div class="flex flex-wrap gap-tight-gap mt-element-gap">
+<span class="font-label-xs text-label-xs border border-outline-variant text-on-surface-variant px-1.5 py-0.5 rounded-sm uppercase tracking-wide">Noun</span>
+<span class="font-label-xs text-label-xs border border-outline-variant text-on-surface-variant px-1.5 py-0.5 rounded-sm uppercase tracking-wide">Neuter</span>
+<span class="font-label-xs text-label-xs border border-outline-variant text-on-surface-variant px-1.5 py-0.5 rounded-sm uppercase tracking-wide">Plural</span>
+</div>
+</section>
+<!-- Separator -->
+<div class="px-container-padding py-unit">
+<div class="h-px w-full bg-black/5"></div>
+</div>
+<!-- Definitions Section -->
+<section class="px-container-padding py-element-gap space-y-stack-margin">
+<div class="space-y-unit">
+<div class="flex gap-element-gap">
+<span class="font-data-mono text-data-mono text-on-surface-variant/60 w-4">1.</span>
+<p class="font-body-sm text-body-sm text-on-surface leading-normal">Arms, weapons, armor, especially those of a warrior or soldier.</p>
+</div>
+<div class="flex gap-element-gap pt-unit border-t border-black/[0.02]">
+<span class="font-data-mono text-data-mono text-on-surface-variant/60 w-4">2.</span>
+<p class="font-body-sm text-body-sm text-on-surface leading-normal">War, battle, strife; military power or force.</p>
+</div>
+<div class="flex gap-element-gap pt-unit border-t border-black/[0.02]">
+<span class="font-data-mono text-data-mono text-on-surface-variant/60 w-4">3.</span>
+<p class="font-body-sm text-body-sm text-on-surface leading-normal">Tools, implements, equipment (especially for farming or nautical use).</p>
+</div>
+</div>
+</section>
+<!-- Context Section -->
+<section class="mt-element-gap px-container-padding">
+<div class="bg-white/40 p-3 rounded-xl border border-white/50 inner-glow">
+<span class="font-label-xs text-label-xs uppercase tracking-widest text-on-surface-variant/60 block mb-unit">In Context</span>
+<p class="font-body-sm text-body-sm text-on-surface italic leading-relaxed">
+<span class="bg-primary/5 border-b border-primary/20 px-0.5">Arma</span> virumque cano, Troiae qui primus ab oris...
+                    </p>
+<div class="mt-2 flex items-center justify-between">
+<span class="font-data-mono text-[10px] text-on-surface-variant/50">— Virgil, Aeneid 1.1</span>
+<button class="text-[10px] font-medium text-primary hover:underline transition-all">View Full</button>
+</div>
+</div>
+</section>
+<!-- Visual Bento Elements -->
+<section class="p-container-padding grid grid-cols-2 gap-tight-gap">
+<div class="relative overflow-hidden rounded-lg aspect-[4/3] group border border-white/40">
+<img class="object-cover w-full h-full transition-transform duration-700 group-hover:scale-110" data-alt="A macro photograph of an ancient Roman gladius hilt resting on polished white marble. The lighting is cold and clinical, emphasizing the textured leather and bronze. The overall mood is high-end, museum-quality, with a minimalist aesthetic dominated by soft greys and whites." src="https://lh3.googleusercontent.com/aida/ADBb0ujYT68cAWGdJiF43ILq8r7cVw5ra9PHHv_gDhUOvYITOTLy4hKRgF_gOTxVwdyzHEYM783YJj3Wnas8K_Beemkx_ccVONzkvGYZDOljb2vJqOsGQkeSsMjPJK8cLNhIURfN6sGO1zu6fJUoadbVAglez_Vfmo1BpJNYVCsYfODs6G7tNfHDK7z8gupDDvdT-c3vqk5uD6mKSHm1uxe7B-OIZoS56wrKhE88rrsaVnuQI6GgKk9asiHauMCTGxUxJuwtWS9pa77uFg"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+</div>
+<div class="relative overflow-hidden rounded-lg aspect-[4/3] group border border-white/40">
+<img class="object-cover w-full h-full transition-transform duration-700 group-hover:scale-110" data-alt="A clean, minimalist digital rendering of a classical sculpture fragment, specifically a marble torso wearing light military armor. The scene is bathed in bright, diffused lighting characteristic of a high-end light-mode UI. The background is a soft, out-of-focus white gallery wall, creating a sense of depth and elegance." src="https://lh3.googleusercontent.com/aida/ADBb0uijLrJxUezqTbBqUZ1OETqChk5gUTR4cyNKo_p3jZX2_L19w3wIooLtYEG1C8v6e3KMpWycBRHVxfAAggbefYQ5aUJ1P-E9EhkTNmx62QgtUnFpniTngt2aBTy5s1r7a0JVB9MUQkB5XuQrW2pBHWTGyK7Ey4DVrG3guNnG2itoX0w9gJ5YWu4c10w4xAvfBAYFqVBOmVvvCkfFS062QAJhj29aUtgeYcUrIePUma9WbaxtJaYvzWhaLtX3JkbFBFPMJG-wT8k3SA"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+</div>
+</section>
+<!-- Morphological Breakdown Details -->
+<section class="px-container-padding py-element-gap">
+<div class="bg-black/5 rounded p-2.5 space-y-2">
+<div class="flex justify-between items-center">
+<span class="font-label-xs text-label-xs text-on-surface-variant">Root</span>
+<span class="font-data-mono text-data-mono font-semibold">arm-</span>
+</div>
+<div class="h-px bg-black/5"></div>
+<div class="flex justify-between items-center">
+<span class="font-label-xs text-label-xs text-on-surface-variant">Ending</span>
+<span class="font-data-mono text-data-mono font-semibold">-a</span>
+</div>
+<div class="h-px bg-black/5"></div>
+<div class="flex justify-between items-center">
+<span class="font-label-xs text-label-xs text-on-surface-variant">Declension</span>
+<span class="font-data-mono text-data-mono">2nd</span>
+</div>
+</div>
+</section>
+</div>
+<!-- Footer Actions -->
+<footer class="p-container-padding border-t border-black/5 bg-white/10 backdrop-blur-md flex justify-between gap-tight-gap">
+<button class="flex-1 py-1.5 rounded bg-black text-white font-label-xs uppercase tracking-widest hover:opacity-90 transition-opacity active:scale-[0.98]">
+                Add to List
+            </button>
+<button class="px-3 py-1.5 rounded border border-black/10 text-on-surface-variant hover:bg-black/5 transition-colors">
+<span class="material-symbols-outlined" data-icon="share">share</span>
+</button>
+</footer>
+</main>
+<!-- Overlay "Blur" Indicator -->
+<div class="fixed top-4 right-[340px] z-20 flex items-center gap-2 px-3 py-1.5 bg-black/80 text-white rounded-full text-[10px] font-bold tracking-widest uppercase backdrop-blur-xl">
+<span class="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span>
+        Alpheios Active
+    </div>
+</body></html>

@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Alpheios — Drawer · Settings</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Lato:ital,wght@0,400;0,700;1,400&family=Material+Symbols+Outlined:opsz,wght,FILL@20,400,0..1&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --surface: #f9f9fb;
+    --surface-container-lowest: #ffffff;
+    --surface-container-low: #f3f3f5;
+    --surface-container: #edeef0;
+    --surface-container-high: #e8e8ea;
+    --on-surface: #1a1c1d;
+    --on-surface-variant: #4c4546;
+    --glass-surface: rgba(255, 255, 255, 0.55);
+    --glass-surface-low: rgba(255, 255, 255, 0.35);
+    --glass-border: rgba(255, 255, 255, 0.6);
+    --glass-shadow: rgba(0, 0, 0, 0.08);
+    --primary: #000000;
+    --on-primary: #ffffff;
+    --secondary-container: #e1dfdf;
+    --on-secondary-container: #3a3a3a;
+    --tertiary: #0e6b4f;
+    --error: #ba1a1a;
+    --outline: #7e7576;
+    --outline-variant: #cfc4c5;
+    --divider: rgba(0, 0, 0, 0.06);
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    color: var(--on-surface);
+    background: var(--surface);
+    font-size: 12px; line-height: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .lang-classical { font-family: 'Lato', 'Noto Serif', serif; }
+
+  .page { max-width: 1280px; margin: 0 auto; padding: 32px; }
+  .page-title { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 4px; }
+  .page-sub { color: var(--on-surface-variant); margin: 0 0 32px; font-size: 13px; }
+  .breadcrumb { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--on-surface-variant); margin-bottom: 16px; }
+  .breadcrumb a { color: inherit; text-decoration: none; border-bottom: 1px solid var(--outline-variant); }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+  @media (max-width: 1100px) { .grid { grid-template-columns: 1fr; } }
+
+  .scene {
+    background: var(--surface-container-low);
+    border: 1px solid var(--outline-variant);
+    border-radius: 16px;
+    padding: 16px;
+  }
+  .scene-label {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--on-surface-variant); margin-bottom: 12px;
+  }
+
+  .drawer-wrap {
+    display: flex; height: 700px;
+    border-radius: 12px; overflow: hidden;
+    box-shadow: 0 12px 40px var(--glass-shadow);
+  }
+  .sidebar {
+    width: 64px; flex-shrink: 0;
+    background: var(--glass-surface-low);
+    backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid var(--glass-border);
+    border-right: 0;
+    display: flex; flex-direction: column;
+  }
+  .sidebar-brand { height: 44px; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid var(--divider); }
+  .brand-mark {
+    width: 28px; height: 28px; border-radius: 6px;
+    background: var(--primary); color: var(--on-primary);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 11px;
+  }
+  .tabs { flex: 1; display: flex; flex-direction: column; }
+  .tab {
+    height: 56px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 4px;
+    background: transparent; border: 0; border-left: 1.5px solid transparent;
+    color: var(--on-surface-variant); text-decoration: none; cursor: pointer;
+  }
+  .tab:hover { background: rgba(0,0,0,0.04); color: var(--on-surface); }
+  .tab.active { background: rgba(0,0,0,0.06); border-left-color: var(--on-surface); color: var(--on-surface); }
+  .tab.disabled { opacity: 0.32; cursor: not-allowed; }
+  .tab .material-symbols-outlined { font-size: 20px; }
+  .tab-label { font-size: 9px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; }
+  .sidebar-bottom { border-top: 1px solid var(--divider); }
+
+  .panel {
+    flex: 1;
+    background: var(--glass-surface);
+    backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid var(--glass-border);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .topbar {
+    height: 44px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 12px;
+    border-bottom: 1px solid var(--divider);
+    background: rgba(255,255,255,0.25);
+  }
+  .topbar-title { font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; }
+  .topbar-title .lang { color: var(--on-surface-variant); font-weight: 500; }
+  .topbar-actions { display: flex; gap: 2px; }
+
+  .icon-btn {
+    width: 28px; height: 28px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 6px; border: 0; background: transparent; cursor: pointer;
+    color: var(--on-surface-variant);
+  }
+  .icon-btn:hover { background: rgba(0,0,0,0.06); color: var(--on-surface); }
+  .icon-btn .material-symbols-outlined { font-size: 16px; }
+
+  /* horizontal segmented tabs (settings categories) */
+  .segmented-row {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--divider);
+  }
+  .segmented {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    background: rgba(0,0,0,0.05);
+    border-radius: 8px;
+    padding: 2px;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+  }
+  .segmented button {
+    background: transparent; border: 0;
+    padding: 6px 4px;
+    font-size: 10px; font-weight: 500;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--on-surface-variant);
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .segmented button.active {
+    background: var(--surface-container-lowest);
+    color: var(--on-surface);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    font-weight: 600;
+  }
+
+  .scroll-area { flex: 1; overflow-y: auto; padding-bottom: 12px; }
+  .scroll-area::-webkit-scrollbar { width: 4px; }
+  .scroll-area::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.18); border-radius: 2px; }
+
+  .group {
+    padding: 12px;
+    border-bottom: 1px solid var(--divider);
+  }
+  .group h4 {
+    margin: 0 0 6px;
+    font-size: 10px; font-weight: 600;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--on-surface-variant);
+  }
+  .group .desc {
+    font-size: 11px; color: var(--on-surface-variant);
+    margin: 0 0 8px;
+  }
+
+  .row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 0;
+    border-top: 1px solid var(--divider);
+    gap: 8px;
+  }
+  .row:first-of-type { border-top: 0; }
+  .row-label {
+    flex: 1;
+    min-width: 0;
+  }
+  .row-label .name { font-size: 12px; line-height: 16px; }
+  .row-label .help { display: block; font-size: 10px; color: var(--on-surface-variant); margin-top: 2px; }
+  .row-control { flex-shrink: 0; }
+
+  /* toggle */
+  .toggle {
+    width: 32px; height: 18px;
+    background: var(--outline-variant);
+    border-radius: 9999px;
+    position: relative;
+    cursor: pointer;
+    transition: background 120ms;
+  }
+  .toggle::after {
+    content: '';
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 14px; height: 14px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 120ms cubic-bezier(0.2,0,0,1);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+  }
+  .toggle.on { background: var(--primary); }
+  .toggle.on::after { transform: translateX(14px); }
+
+  /* select pill */
+  .select-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: var(--surface-container-lowest);
+    border: 1px solid var(--outline-variant);
+    border-radius: 6px;
+    padding: 4px 8px 4px 10px;
+    font-size: 11px;
+    color: var(--on-surface);
+    cursor: pointer;
+  }
+  .select-pill .material-symbols-outlined { font-size: 14px; color: var(--on-surface-variant); }
+
+  /* segmented inline (small) */
+  .seg-inline {
+    display: inline-flex;
+    background: rgba(0,0,0,0.05);
+    border-radius: 6px;
+    padding: 2px;
+  }
+  .seg-inline button {
+    background: transparent; border: 0;
+    padding: 4px 8px;
+    font-size: 10px; font-weight: 500;
+    letter-spacing: 0.05em; text-transform: uppercase;
+    color: var(--on-surface-variant);
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .seg-inline button.active {
+    background: var(--surface-container-lowest);
+    color: var(--on-surface);
+    font-weight: 600;
+  }
+
+  /* slider */
+  .slider {
+    width: 120px;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 4px;
+    border-radius: 9999px;
+    background: var(--outline-variant);
+    outline: none;
+  }
+  .slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--primary);
+    cursor: pointer;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 1px var(--primary);
+  }
+  .slider-value {
+    display: inline-block;
+    margin-left: 8px;
+    font-size: 11px;
+    color: var(--on-surface-variant);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* font size labels */
+  .font-marks {
+    display: flex; justify-content: space-between;
+    font-size: 9px; color: var(--on-surface-variant);
+    letter-spacing: 0.08em; text-transform: uppercase;
+    margin-top: 4px;
+    width: 120px;
+  }
+
+  /* resource picker */
+  .resource-pick {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 0;
+    border-top: 1px solid var(--divider);
+  }
+  .resource-pick:first-child { border-top: 0; }
+  .resource-pick .check {
+    width: 16px; height: 16px; flex-shrink: 0;
+    border: 1.5px solid var(--outline-variant);
+    border-radius: 3px;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .resource-pick .check.on {
+    background: var(--primary); border-color: var(--primary); color: var(--on-primary);
+  }
+  .resource-pick .check .material-symbols-outlined { font-size: 12px; }
+  .resource-pick .body { flex: 1; min-width: 0; }
+  .resource-pick .body .name { font-size: 12px; }
+  .resource-pick .body .meta { font-size: 10px; color: var(--on-surface-variant); }
+
+  /* danger row */
+  .danger-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px;
+    background: rgba(186, 26, 26, 0.04);
+    border: 1px solid rgba(186, 26, 26, 0.18);
+    border-radius: 8px;
+    margin: 0 12px 12px;
+  }
+  .danger-row .name { font-size: 12px; color: var(--on-surface); font-weight: 500; }
+  .danger-row .help { font-size: 10px; color: var(--on-surface-variant); margin-top: 2px; }
+  .btn-danger {
+    background: transparent;
+    color: var(--error);
+    border: 1px solid rgba(186, 26, 26, 0.4);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 10px; font-weight: 500;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    cursor: pointer;
+  }
+  .btn-danger:hover { background: rgba(186, 26, 26, 0.08); }
+
+  /* footer */
+  .footer {
+    flex-shrink: 0;
+    padding: 8px 12px;
+    border-top: 1px solid var(--divider);
+    background: rgba(255,255,255,0.2);
+    display: flex; gap: 6px; align-items: center;
+    font-size: 10px;
+  }
+  .footer .meta { flex: 1; color: var(--on-surface-variant); font-style: italic; }
+  .btn-primary {
+    background: var(--primary); color: var(--on-primary);
+    border: 0; border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 10px; font-weight: 500;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    cursor: pointer;
+  }
+  .btn-primary[disabled] { opacity: 0.4; cursor: not-allowed; }
+  .btn-outline {
+    background: transparent; color: var(--on-surface);
+    border: 1px solid var(--outline-variant); border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 10px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  /* about panel */
+  .about-block {
+    padding: 12px;
+    background: rgba(0,0,0,0.04);
+    border-radius: 8px;
+    margin: 12px;
+    font-size: 11px;
+  }
+  .about-block .row { padding: 4px 0; border-top: 1px solid var(--divider); }
+  .about-block .row:first-of-type { border-top: 0; }
+  .about-block .v {
+    font-family: 'Inter', monospace;
+    color: var(--on-surface-variant);
+    font-size: 10px;
+  }
+
+  .annotation {
+    margin-top: 12px;
+    padding: 12px;
+    background: var(--surface-container-lowest);
+    border: 1px solid var(--outline-variant);
+    border-radius: 12px;
+    font-size: 11px;
+    line-height: 16px;
+    color: var(--on-surface-variant);
+  }
+  .annotation strong {
+    color: var(--on-surface); display: block; margin-bottom: 4px;
+    font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+  <main class="page">
+    <div class="breadcrumb"><a href="index.html">← All mockups</a></div>
+    <h1 class="page-title">Drawer — Settings</h1>
+    <p class="page-sub">设置面板顶部 segmented 切换 4 类。每行一项 setting，控件靠右；改动后 footer 出现 "Save / Reset"。</p>
+
+    <div class="grid">
+
+      <!-- =========== Tab 1: UI =========== -->
+      <div>
+        <div class="scene">
+          <div class="scene-label">01 · UI tab — typography, layout, theme</div>
+          <div class="drawer-wrap">
+            <nav class="sidebar">
+              <div class="sidebar-brand"><span class="brand-mark">Al</span></div>
+              <div class="tabs">
+                <a class="tab" href="drawer-lookup.html"><span class="material-symbols-outlined">search</span><span class="tab-label">Lookup</span></a>
+                <a class="tab" href="#"><span class="material-symbols-outlined">menu_book</span><span class="tab-label">Morph</span></a>
+                <a class="tab" href="drawer-inflections.html"><span class="material-symbols-outlined">table_view</span><span class="tab-label">Infl</span></a>
+                <a class="tab" href="drawer-resources.html"><span class="material-symbols-outlined">format_quote</span><span class="tab-label">Usage</span></a>
+                <a class="tab disabled" href="#"><span class="material-symbols-outlined">account_tree</span><span class="tab-label">Tree</span></a>
+                <a class="tab" href="drawer-resources.html"><span class="material-symbols-outlined">history_edu</span><span class="tab-label">Gram</span></a>
+                <a class="tab" href="drawer-wordlist.html"><span class="material-symbols-outlined">bookmark</span><span class="tab-label">List</span></a>
+              </div>
+              <div class="sidebar-bottom">
+                <a class="tab" href="drawer-auth.html"><span class="material-symbols-outlined">account_circle</span><span class="tab-label">User</span></a>
+                <a class="tab active" href="#"><span class="material-symbols-outlined">settings</span><span class="tab-label">Opts</span></a>
+              </div>
+            </nav>
+
+            <section class="panel">
+              <header class="topbar">
+                <div class="topbar-title">Alpheios <span class="lang">· Settings</span></div>
+                <div class="topbar-actions">
+                  <button class="icon-btn"><span class="material-symbols-outlined">close_fullscreen</span></button>
+                  <button class="icon-btn"><span class="material-symbols-outlined">close</span></button>
+                </div>
+              </header>
+
+              <div class="segmented-row">
+                <div class="segmented">
+                  <button class="active">UI</button>
+                  <button>Features</button>
+                  <button>Resources</button>
+                  <button>Advanced</button>
+                </div>
+              </div>
+
+              <div class="scroll-area">
+                <div class="group">
+                  <h4>Typography</h4>
+                  <div class="row">
+                    <div class="row-label">
+                      <span class="name">Font size</span>
+                      <span class="help">Scales every text in the panel. <span class="lang-classical" style="font-style:italic;">arma</span> · scaled preview.</span>
+                    </div>
+                    <div class="row-control">
+                      <input type="range" class="slider" min="0" max="100" value="40" />
+                      <span class="slider-value">100%</span>
+                      <div class="font-marks"><span>S</span><span>M</span><span>L</span></div>
+                    </div>
+                  </div>
+                  <div class="row">
+                    <div class="row-label">
+                      <span class="name">Classical text font</span>
+                      <span class="help">Used for Latin / Greek / Arabic glyphs.</span>
+                    </div>
+                    <div class="row-control">
+                      <button class="select-pill">Lato <span class="material-symbols-outlined">expand_more</span></button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="group">
+                  <h4>Layout</h4>
+                  <div class="row">
+                    <div class="row-label">
+                      <span class="name">Panel position</span>
+                      <span class="help">Where the drawer anchors when expanded.</span>
+                    </div>
+                    <div class="row-control">
+                      <div class="seg-inline">
+                        <button>Left</button>
+                        <button class="active">Right</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="row">
+                    <div class="row-label">
+                      <span class="name">Popup max width</span>
+                      <span class="help">Cap on the floating popup. Range 240–600.</span>
+                    </div>
+                    <div class="row-control">
+                      <input type="range" class="slider" min="240" max="600" value="360" />
+                      <span class="slider-value">360</span>
+                    </div>
+                  </div>
+                  <div class="row">
+                    <div class="row-label">
+                      <span class="name">Show toolbar FAB</span>
+                      <span class="help">Floating button bottom-right when no selection.</span>
+                    </div>
+                    <div class="row-control">
+                      <span class="toggle on" role="switch" aria-checked="true"></span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="group">
+                  <h4>Theme</h4>
+                  <div class="row">
+                    <div class="row-label">
+                      <span class="name">Color scheme</span>
+                      <span class="help">"Auto" follows your system setting.</span>
+                    </div>
+                    <div class="row-control">
+                      <div class="seg-inline">
+                        <button>Auto</button>
+                        <button class="active">Light</button>
+                        <button>Dark</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="row">
+                    <div class="row-label">
+                      <span class="name">Hide login prompt</span>
+                      <span class="help">Suppress the "log in to sync" inline card.</span>
+                    </div>
+                    <div class="row-control">
+                      <span class="toggle" role="switch" aria-checked="false"></span>
+                    </div>
+                  </div>
+                  <div class="row">
+                    <div class="row-label">
+                      <span class="name">Reduce motion</span>
+                      <span class="help">Auto-detected from <code style="font-size:10px;">prefers-reduced-motion</code>.</span>
+                    </div>
+                    <div class="row-control">
+                      <div class="seg-inline">
+                        <button class="active">Auto</button>
+                        <button>Off</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <footer class="footer">
+                <span class="meta">2 changes · unsaved</span>
+                <button class="btn-outline">Reset</button>
+                <button class="btn-primary">Save</button>
+              </footer>
+            </section>
+          </div>
+        </div>
+        <div class="annotation">
+          <strong>Tab · UI</strong>
+          字体 / 布局 / 主题，所有改动写入 <code>uiOptions</code>。footer 在有未保存变更时显示 Save/Reset，否则隐藏。
+        </div>
+      </div>
+
+      <!-- =========== Tab 2: Features =========== -->
+      <div>
+        <div class="scene">
+          <div class="scene-label">02 · Features tab — toggleable functionality</div>
+          <div class="drawer-wrap">
+            <nav class="sidebar">
+              <div class="sidebar-brand"><span class="brand-mark">Al</span></div>
+              <div class="tabs">
+                <a class="tab" href="drawer-lookup.html"><span class="material-symbols-outlined">search</span><span class="tab-label">Lookup</span></a>
+                <a class="tab" href="#"><span class="material-symbols-outlined">menu_book</span><span class="tab-label">Morph</span></a>
+                <a class="tab" href="drawer-inflections.html"><span class="material-symbols-outlined">table_view</span><span class="tab-label">Infl</span></a>
+                <a class="tab" href="drawer-resources.html"><span class="material-symbols-outlined">format_quote</span><span class="tab-label">Usage</span></a>
+                <a class="tab disabled" href="#"><span class="material-symbols-outlined">account_tree</span><span class="tab-label">Tree</span></a>
+                <a class="tab" href="drawer-resources.html"><span class="material-symbols-outlined">history_edu</span><span class="tab-label">Gram</span></a>
+                <a class="tab" href="drawer-wordlist.html"><span class="material-symbols-outlined">bookmark</span><span class="tab-label">List</span></a>
+              </div>
+              <div class="sidebar-bottom">
+                <a class="tab" href="drawer-auth.html"><span class="material-symbols-outlined">account_circle</span><span class="tab-label">User</span></a>
+                <a class="tab active" href="#"><span class="material-symbols-outlined">settings</span><span class="tab-label">Opts</span></a>
+              </div>
+            </nav>
+
+            <section class="panel">
+              <header class="topbar">
+                <div class="topbar-title">Alpheios <span class="lang">· Settings</span></div>
+                <div class="topbar-actions">
+                  <button class="icon-btn"><span class="material-symbols-outlined">close_fullscreen</span></button>
+                  <button class="icon-btn"><span class="material-symbols-outlined">close</span></button>
+                </div>
+              </header>
+
+              <div class="segmented-row">
+                <div class="segmented">
+                  <button>UI</button>
+                  <button class="active">Features</button>
+                  <button>Resources</button>
+                  <button>Advanced</button>
+                </div>
+              </div>
+
+              <div class="scroll-area">
+                <div class="group">
+                  <h4>Lookup behavior</h4>
+                  <div class="row">
+                    <div class="row-label">
+                      <span class="name">Auto-lookup on selection</span>
+                      <span class="help">Show popup automatically when text is selected.</span>
+                    </div>
+                    <div class="row-control"><span class="toggle on"></span></div>
+                  </div>
+                  <div class="row">
+                    <div class="row-label">
+                      <span class="name">Lookup on double-click</span>
+                      <span class="help">Single word lookup without dragging.</span>
+                    </div>
+                    <div class="row-control"><span class="toggle on"></span></div>
+                  </div>
+                  <div class="row">
+                    <div class="row-label">
+                      <span class="name">Collapse short definitions</span>
+                      <span class="help">Show only first definition in popup; expand on click.</span>
+                    </div>
+                    <div class="row-control"><span class="toggle"></span></div>
+                  </div>
+                </div>
+
+                <div class="group">
+                  <h4>Modules</h4>
+                  <div class="row">
+                    <div class="row-label">
+                      <span class="name">Word usage examples</span>
+                      <span class="help">Fetch parallel quotes from corpora.</span>
+                    </div>
+                    <div class="row-control"><span class="toggle on"></span></div>
+                  </div>
+                  <div class="row">
+                    <div class="row-label">
+                      <span class="name">Treebank viewer</span>
+                      <span class="help">Show dependency trees when available.</span>
+                    </div>
+                    <div class="row-control"><span class="toggle on"></span></div>
+                  </div>
+                  <div class="row">
+                    <div class="row-label">
+                      <span class="name">Word list sync</span>
+                      <span class="help">Requires sign-in. Currently logged out.</span>
+                    </div>
+                    <div class="row-control"><span class="toggle"></span></div>
+                  </div>
+                </div>
+
+                <div class="group">
+                  <h4>Languages</h4>
+                  <p class="desc">Only enabled languages will be auto-detected on selection.</p>
+                  <div class="row">
+                    <div class="row-label"><span class="name">Latin</span></div>
+                    <div class="row-control"><span class="toggle on"></span></div>
+                  </div>
+                  <div class="row">
+                    <div class="row-label"><span class="name">Ancient Greek</span></div>
+                    <div class="row-control"><span class="toggle on"></span></div>
+                  </div>
+                  <div class="row">
+                    <div class="row-label"><span class="name">Arabic</span></div>
+                    <div class="row-control"><span class="toggle"></span></div>
+                  </div>
+                  <div class="row">
+                    <div class="row-label"><span class="name">Persian</span></div>
+                    <div class="row-control"><span class="toggle"></span></div>
+                  </div>
+                </div>
+              </div>
+
+              <footer class="footer">
+                <span class="meta">No changes</span>
+                <button class="btn-outline" disabled style="opacity:0.4;">Reset</button>
+                <button class="btn-primary" disabled>Save</button>
+              </footer>
+            </section>
+          </div>
+        </div>
+        <div class="annotation">
+          <strong>Tab · Features</strong>
+          一个开关一行，按职责分组。languages 组用 toggle 直接控制语言识别白名单。无变更时 footer 按钮置灰。
+        </div>
+      </div>
+
+      <!-- =========== Tab 3: Resources =========== -->
+      <div>
+        <div class="scene">
+          <div class="scene-label">03 · Resources tab — pick lexicons & grammars per language</div>
+          <div class="drawer-wrap">
+            <nav class="sidebar">
+              <div class="sidebar-brand"><span class="brand-mark">Al</span></div>
+              <div class="tabs">
+                <a class="tab" href="drawer-lookup.html"><span class="material-symbols-outlined">search</span><span class="tab-label">Lookup</span></a>
+                <a class="tab" href="#"><span class="material-symbols-outlined">menu_book</span><span class="tab-label">Morph</span></a>
+                <a class="tab" href="drawer-inflections.html"><span class="material-symbols-outlined">table_view</span><span class="tab-label">Infl</span></a>
+                <a class="tab" href="drawer-resources.html"><span class="material-symbols-outlined">format_quote</span><span class="tab-label">Usage</span></a>
+                <a class="tab disabled" href="#"><span class="material-symbols-outlined">account_tree</span><span class="tab-label">Tree</span></a>
+                <a class="tab" href="drawer-resources.html"><span class="material-symbols-outlined">history_edu</span><span class="tab-label">Gram</span></a>
+                <a class="tab" href="drawer-wordlist.html"><span class="material-symbols-outlined">bookmark</span><span class="tab-label">List</span></a>
+              </div>
+              <div class="sidebar-bottom">
+                <a class="tab" href="drawer-auth.html"><span class="material-symbols-outlined">account_circle</span><span class="tab-label">User</span></a>
+                <a class="tab active" href="#"><span class="material-symbols-outlined">settings</span><span class="tab-label">Opts</span></a>
+              </div>
+            </nav>
+
+            <section class="panel">
+              <header class="topbar">
+                <div class="topbar-title">Alpheios <span class="lang">· Settings</span></div>
+                <div class="topbar-actions">
+                  <button class="icon-btn"><span class="material-symbols-outlined">close_fullscreen</span></button>
+                  <button class="icon-btn"><span class="material-symbols-outlined">close</span></button>
+                </div>
+              </header>
+
+              <div class="segmented-row">
+                <div class="segmented">
+                  <button>UI</button>
+                  <button>Features</button>
+                  <button class="active">Resources</button>
+                  <button>Advanced</button>
+                </div>
+              </div>
+
+              <div class="scroll-area">
+                <div class="group">
+                  <h4>Latin · lexicons</h4>
+                  <p class="desc">Tried in order. Drag to reorder.</p>
+                  <div class="resource-pick">
+                    <span class="check on"><span class="material-symbols-outlined">check</span></span>
+                    <div class="body">
+                      <div class="name">Lewis &amp; Short, 1879</div>
+                      <div class="meta">primary · definitions · morph</div>
+                    </div>
+                    <span class="material-symbols-outlined" style="color:var(--on-surface-variant); font-size:14px;">drag_indicator</span>
+                  </div>
+                  <div class="resource-pick">
+                    <span class="check on"><span class="material-symbols-outlined">check</span></span>
+                    <div class="body">
+                      <div class="name">Whitaker's WORDS</div>
+                      <div class="meta">morph fallback</div>
+                    </div>
+                    <span class="material-symbols-outlined" style="color:var(--on-surface-variant); font-size:14px;">drag_indicator</span>
+                  </div>
+                  <div class="resource-pick">
+                    <span class="check"></span>
+                    <div class="body">
+                      <div class="name">Latin Wordnet</div>
+                      <div class="meta">semantic relations · experimental</div>
+                    </div>
+                    <span class="material-symbols-outlined" style="color:var(--on-surface-variant); font-size:14px;">drag_indicator</span>
+                  </div>
+                </div>
+
+                <div class="group">
+                  <h4>Latin · grammars</h4>
+                  <div class="resource-pick">
+                    <span class="check on"><span class="material-symbols-outlined">check</span></span>
+                    <div class="body">
+                      <div class="name">Allen &amp; Greenough</div>
+                      <div class="meta">1903 · 642 sections</div>
+                    </div>
+                  </div>
+                  <div class="resource-pick">
+                    <span class="check"></span>
+                    <div class="body">
+                      <div class="name">Bennett's New Latin Grammar</div>
+                      <div class="meta">1908</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="group">
+                  <h4>Ancient Greek · lexicons</h4>
+                  <div class="resource-pick">
+                    <span class="check on"><span class="material-symbols-outlined">check</span></span>
+                    <div class="body">
+                      <div class="name">LSJ — Liddell-Scott-Jones</div>
+                      <div class="meta">primary · definitions · morph</div>
+                    </div>
+                  </div>
+                  <div class="resource-pick">
+                    <span class="check on"><span class="material-symbols-outlined">check</span></span>
+                    <div class="body">
+                      <div class="name">Middle Liddell</div>
+                      <div class="meta">abridged · short definitions</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <footer class="footer">
+                <span class="meta">2 lexicons · 1 grammar enabled</span>
+                <button class="btn-outline">Manage</button>
+                <button class="btn-primary">Save</button>
+              </footer>
+            </section>
+          </div>
+        </div>
+        <div class="annotation">
+          <strong>Tab · Resources</strong>
+          每语言一个分组，词典列表支持勾选 + 拖拽排序（drag_indicator 抓手）。语法资源单独子分组。Manage 跳到外部资源管理页。
+        </div>
+      </div>
+
+      <!-- =========== Tab 4: Advanced =========== -->
+      <div>
+        <div class="scene">
+          <div class="scene-label">04 · Advanced tab — diagnostics, cache, build info</div>
+          <div class="drawer-wrap">
+            <nav class="sidebar">
+              <div class="sidebar-brand"><span class="brand-mark">Al</span></div>
+              <div class="tabs">
+                <a class="tab" href="drawer-lookup.html"><span class="material-symbols-outlined">search</span><span class="tab-label">Lookup</span></a>
+                <a class="tab" href="#"><span class="material-symbols-outlined">menu_book</span><span class="tab-label">Morph</span></a>
+                <a class="tab" href="drawer-inflections.html"><span class="material-symbols-outlined">table_view</span><span class="tab-label">Infl</span></a>
+                <a class="tab" href="drawer-resources.html"><span class="material-symbols-outlined">format_quote</span><span class="tab-label">Usage</span></a>
+                <a class="tab disabled" href="#"><span class="material-symbols-outlined">account_tree</span><span class="tab-label">Tree</span></a>
+                <a class="tab" href="drawer-resources.html"><span class="material-symbols-outlined">history_edu</span><span class="tab-label">Gram</span></a>
+                <a class="tab" href="drawer-wordlist.html"><span class="material-symbols-outlined">bookmark</span><span class="tab-label">List</span></a>
+              </div>
+              <div class="sidebar-bottom">
+                <a class="tab" href="drawer-auth.html"><span class="material-symbols-outlined">account_circle</span><span class="tab-label">User</span></a>
+                <a class="tab active" href="#"><span class="material-symbols-outlined">settings</span><span class="tab-label">Opts</span></a>
+              </div>
+            </nav>
+
+            <section class="panel">
+              <header class="topbar">
+                <div class="topbar-title">Alpheios <span class="lang">· Settings</span></div>
+                <div class="topbar-actions">
+                  <button class="icon-btn"><span class="material-symbols-outlined">close_fullscreen</span></button>
+                  <button class="icon-btn"><span class="material-symbols-outlined">close</span></button>
+                </div>
+              </header>
+
+              <div class="segmented-row">
+                <div class="segmented">
+                  <button>UI</button>
+                  <button>Features</button>
+                  <button>Resources</button>
+                  <button class="active">Advanced</button>
+                </div>
+              </div>
+
+              <div class="scroll-area">
+                <div class="group">
+                  <h4>Diagnostics</h4>
+                  <div class="row">
+                    <div class="row-label">
+                      <span class="name">Log level</span>
+                      <span class="help">Verbose logs help when filing issues. Stored in <code style="font-size:10px;">localStorage</code>.</span>
+                    </div>
+                    <div class="row-control">
+                      <div class="seg-inline">
+                        <button>Error</button>
+                        <button class="active">Warn</button>
+                        <button>Info</button>
+                        <button>Debug</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="row">
+                    <div class="row-label">
+                      <span class="name">Developer mode</span>
+                      <span class="help">Adds <code style="font-size:10px;">?mode=dev</code> options &amp; build info inline.</span>
+                    </div>
+                    <div class="row-control"><span class="toggle"></span></div>
+                  </div>
+                  <div class="row">
+                    <div class="row-label">
+                      <span class="name">Show internal IDs</span>
+                      <span class="help">Render lemma IDs / view IDs next to results.</span>
+                    </div>
+                    <div class="row-control"><span class="toggle"></span></div>
+                  </div>
+                </div>
+
+                <div class="group">
+                  <h4>Cache</h4>
+                  <p class="desc">Lexicon results are cached for offline reading.</p>
+                  <div class="row">
+                    <div class="row-label">
+                      <span class="name">Cache size</span>
+                      <span class="help">Across IndexedDB stores.</span>
+                    </div>
+                    <div class="row-control"><span class="select-pill">12.4 MB · 247 entries</span></div>
+                  </div>
+                </div>
+
+                <div class="danger-row">
+                  <div>
+                    <div class="name">Clear all cached data</div>
+                    <div class="help">Word list, history, and lexicon cache. Cannot be undone.</div>
+                  </div>
+                  <button class="btn-danger">Clear</button>
+                </div>
+
+                <div class="group">
+                  <h4>About</h4>
+                </div>
+                <div class="about-block">
+                  <div class="row">
+                    <span>Alpheios extension</span>
+                    <span class="v">v3.3.2 · MV3</span>
+                  </div>
+                  <div class="row">
+                    <span>alpheios-core/components</span>
+                    <span class="v">v4.x</span>
+                  </div>
+                  <div class="row">
+                    <span>Build branch</span>
+                    <span class="v">main · 2026-05-04</span>
+                  </div>
+                  <div class="row">
+                    <span>Build name</span>
+                    <span class="v">scholarly-glass</span>
+                  </div>
+                </div>
+              </div>
+
+              <footer class="footer">
+                <span class="meta">Service Worker · idle</span>
+                <button class="btn-outline">Open logs</button>
+                <button class="btn-outline">Report issue</button>
+              </footer>
+            </section>
+          </div>
+        </div>
+        <div class="annotation">
+          <strong>Tab · Advanced</strong>
+          诊断 / 缓存 / 关于。Clear 行用 danger 风格（淡红底 + 红边 + 红字按钮），明确不可逆。About 段显示 build 信息（v3 当前硬编码 'test'，落地后接入真实值）。
+        </div>
+      </div>
+
+    </div>
+  </main>
+</body>
+</html>
