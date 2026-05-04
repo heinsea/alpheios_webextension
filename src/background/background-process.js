@@ -273,10 +273,31 @@ export default class BackgroundProcess {
     }
   }
 
-  loadContentScript (tabId) {
+  /**
+   * Inject the content script into the tab. The compatibility shim is always
+   * injected first; then either the legacy v2 entry (`content.js`) or the
+   * v3 entry (`content-v3.js`) — selected by the tab URL's `?alpheios=v3`
+   * query gate. The two never coexist on the same page so we don't need
+   * cross-version teardown logic. See doc/ui/REFACTOR-V3-PLAN.md.
+   */
+  async loadContentScript (tabId) {
+    let useV3 = false
+    try {
+      const tab = await browser.tabs.get(tabId)
+      if (tab && tab.url) {
+        const u = new URL(tab.url)
+        useV3 = u.searchParams.get('alpheios') === 'v3'
+      }
+    } catch (e) {
+      // Some tab URLs (chrome://, file:// without permission) throw;
+      // fall back to v2 silently.
+    }
+    const entryFile = useV3
+      ? this.settings.contentV3ScriptFileName
+      : this.settings.contentScriptFileName
     return Promise.all([
       BackgroundProcess.executeScript(tabId, { file: this.settings.compatibilityScriptFileName }),
-      BackgroundProcess.executeScript(tabId, { file: this.settings.contentScriptFileName })
+      BackgroundProcess.executeScript(tabId, { file: entryFile })
     ])
   }
 
@@ -908,6 +929,10 @@ BackgroundProcess.defaults = {
   contentCSSFileNames: ['style/style-components.css'],
   compatibilityScriptFileName: 'compatibility-fixes.js',
   contentScriptFileName: 'content.js',
+  // v3 (Scholarly Glass) parallel content script. Gated by the
+  // `?alpheios=v3` URL query in `loadContentScript`. See
+  // doc/ui/REFACTOR-V3-PLAN.md.
+  contentV3ScriptFileName: 'content-v3.js',
   browserPolyfillName: 'support/webextension-polyfill/browser-polyfill.min.js',
   experienceStorageCheckInterval: 10000,
   experienceStorageThreshold: 3,

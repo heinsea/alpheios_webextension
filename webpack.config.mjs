@@ -63,7 +63,11 @@ export default (env, argv) => {
     context: path.join(projectRoot, 'src'),
     entry: {
       background: './background/background.js',
-      content: './content/content.js'
+      content: './content/content.js',
+      // v3 (Scholarly Glass) parallel content script. Selected at injection
+      // time by `loadContentScript` in background-process.js based on the
+      // tab URL's `?alpheios=v3` query. See doc/ui/REFACTOR-V3-PLAN.md.
+      'content-v3': './content/content-v3.js'
     },
     output: {
       path: path.join(projectRoot, 'dist'),
@@ -71,6 +75,18 @@ export default (env, argv) => {
       clean: false // CleanWebpackPlugin (cleanOnceBeforeBuildPatterns) handles this
     },
     devtool: isProd ? false : 'source-map',
+    module: {
+      rules: [
+        {
+          // `import css from 'foo.css?raw'` returns the raw text. Used by
+          // src/ui-v3/shadow-host.js to inline the components-v3 stylesheet
+          // into the closed ShadowRoot (avoids needing
+          // web_accessible_resources for the dist css path).
+          resourceQuery: /raw/,
+          type: 'asset/source'
+        }
+      ]
+    },
     resolve: {
       // webpack 5 stopped auto-polyfilling Node core modules.
       // crypto-browserify / stream-browserify provide in-browser equivalents
@@ -88,6 +104,21 @@ export default (env, argv) => {
             ? 'node_modules/alpheios-core/packages/components/dist/alpheios-components.min.js'
             : 'node_modules/alpheios-core/packages/components/dist/alpheios-components.js'
         ),
+        // v3 UI: pre-built ESM bundle from the fork (Vite library mode).
+        // We alias both the bare specifier and the `/style.css` subpath so
+        // shadow-host.js can `?raw`-import the stylesheet.
+        'alpheios-components-v3$': path.resolve(
+          projectRoot,
+          '../alpheios_alpheios-core/packages/components-v3/dist/components-v3.js'
+        ),
+        'alpheios-components-v3/style.css$': path.resolve(
+          projectRoot,
+          '../alpheios_alpheios-core/packages/components-v3/dist/style.css'
+        ),
+        // Vue 3 runtime — pinned to the bundler build so component templates
+        // compiled by Vite-side @vitejs/plugin-vue can render at runtime
+        // without needing a template compiler in the webextension bundle.
+        vue$: path.join(projectRoot, 'node_modules/vue/dist/vue.runtime.esm-bundler.js'),
         '@': path.join(projectRoot, 'src')
       }
     },
@@ -102,7 +133,11 @@ export default (env, argv) => {
         // These constants exist in alpheios-components-aware code paths; keep
         // injecting them so the prebuilt UMD blob's runtime checks behave.
         PRODUCTION_MODE_BUILD: JSON.stringify(isProd),
-        DEVELOPMENT_MODE_BUILD: JSON.stringify(!isProd)
+        DEVELOPMENT_MODE_BUILD: JSON.stringify(!isProd),
+        // Vue 3 feature flags — see https://link.vuejs.org/feature-flags
+        __VUE_OPTIONS_API__: JSON.stringify(true),
+        __VUE_PROD_DEVTOOLS__: JSON.stringify(false),
+        __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: JSON.stringify(false)
       })
     ]
   }

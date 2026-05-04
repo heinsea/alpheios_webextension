@@ -115,6 +115,7 @@
     "**/src/env"
   ],
   "dependencies": {
+    "vue": "^3.5.33",
     "webextension-polyfill": "^0.6.0"
   },
   "config": {
