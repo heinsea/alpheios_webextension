@@ -128,7 +128,8 @@
 - [x] `composables/useInflections.js` — 读 Vuex `app.hasInflData` + `api.app.getInflectionsViewSet()` → render() → 提取 wideView.rows/columns/footnotes · 2026-05-05
 - [x] `composables/useWordList.js` — 读 `api.app.getAllWordLists()` → groups + `selectWordItem()` → context view · 2026-05-05
 - [x] InflectionsPage / WordListPage / MorphPage 接通 — App.vue 计算属性 merge live + fixture fallback；MorphPage 通过增强的 useLookup morph rows（从 Lexeme.inflections 提取 stem/suffix/features）· 2026-05-05
-- [s] ResourcesPage usage/grammar/tree 实装 — tree 需 ResourceQuery API 确认；usage 已有 wordUsageExamples 数据路径但待后续 session 接线 · 2026-05-05
+- [x] ResourcesPage usage/grammar/tree 接线收敛 — App.vue 改为复用 `use-resources.js`（移除内联 buildUsage/buildGrammar/buildTree 重复逻辑）；usage/grammar 继续 watch live 数据；tree 由 `lexis.treebankSrc` 驱动（有值走 live iframe，无值 fallback fixture SVG）· 2026-05-05
+- [x] LookupPage citation + principalParts 从 live 数据填充 — citation 读 `selectedText` + `window.location.href`；principalParts 读 `lemma.principalParts: string[]` · 2026-05-05
 
 ### Stage 4d · Settings + Auth
 
@@ -148,7 +149,19 @@
 
 ## 会话日志（最新在顶）
 
-### 2026-05-05 · session 3 — Stage 4c + 4d 完成 + Bug 修复（续 4a/4b）
+### 2026-05-05 · session 4 — Stage 4c 续作（Resources live 接线修复）
+
+**Bug 修复**（Resources 数据接入）：
+1. **App.vue 重复接线导致状态不稳**：移除内联 `buildUsageFromApi/buildGrammarFromApi/buildTreeFromApi` 与页面内临时 watch，改为统一复用 `use-resources.js`，避免同一数据源多路径更新造成“像没接上”的表现。
+2. **TreeBank live 触发与判定**：tree 页切入时调用 `startResourceQuery({ type: 'treebank', value: '', languageID })`；`use-resources.js` tree 判定放宽为 `treebankSrc` 有值即进入 live iframe（不再额外卡 `hasTreebankData`）。
+3. **ResourcesPage 空值鲁棒性**：`usage/grammar/tree` 计算属性补默认结构，`grammar.reading` 读取改为可空链，避免 live 未就绪时空引用。
+
+**待用户操作验收**：
+- `?alpheios=v3&page=usage`：先查词后切页，应见真实 usage quotes/author 分组（非纯 fixture）。
+- `?alpheios=v3&page=grammar`：应见 live grammar provider/link。
+- `?alpheios=v3&page=tree`：有 treebank 数据时显示 live iframe；无数据时保留 fixture SVG，不报错。
+
+
 
 **Bug 修复**（2 个）：
 1. **搜索框 Enter 键无响应**：App.vue RecessedInput 缺少 `@enter` 处理器。添加 `onSearchEnter` 函数，调用 `controller.api.app.newLexicalRequest(value, languageID, null, 'lookup')`。

@@ -18,12 +18,20 @@
 import componentsStyle from 'alpheios-components-v3/style.css?raw'
 
 export function createShadowHost (hostId) {
-  // Idempotent: an existing host is reused (mount.js relies on this for HMR
-  // and manual re-injection).
+  // If a previous injection created this host with a CLOSED shadow root,
+  // `host.shadowRoot` is always null and calling attachShadow() again throws
+  // a DOMException. In that case we must replace the host node.
   let host = document.getElementById(hostId)
-  if (host && host.shadowRoot) {
-    return { host, shadow: host.shadowRoot, isNew: false }
+  if (host) {
+    if (host.shadowRoot) {
+      return { host, shadow: host.shadowRoot, isNew: false }
+    }
+    if (host.parentNode) {
+      host.parentNode.removeChild(host)
+    }
+    host = null
   }
+
   if (!host) {
     host = document.createElement('div')
     host.id = hostId
