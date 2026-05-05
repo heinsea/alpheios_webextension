@@ -2,7 +2,7 @@
 /**
  * Alpheios v3 (Scholarly Glass) content-script entry.
  *
- * Stage 0 scope: ShadowRoot + Vue 3 mount of static UI fixtures.
+ * Stage 0 scope: ShadowRoot + Vue 3 mount of the v3 UI.
  *
  * Stage 4a scope: also instantiate the alpheios-core AppController with
  * ONLY AuthModule registered (no PanelModule / PopupModule / ToolbarModule /
@@ -107,9 +107,65 @@ typeof BUILD_NUMBER // referenced so DefinePlugin keeps the constant alive
     await appController.activate()
     // eslint-disable-next-line no-console
     console.log('[alpheios-v3] AppController active · auth module ready')
+
+    // ── Compatibility shims for the missing UIController ────────────────
+    // v3 deliberately omits Panel/Popup/Toolbar/ActionPanel UI modules — but
+    // alpheios-core internals call `this.api.ui.*` from several data-flow
+    // entry points (newLexicalRequest, onTextSelected, sendFeature, etc.).
+    // Without a stub, any of those paths throws TypeError mid-flight, leaving
+    // the store in a half-committed state. No-op every method we have ever
+    // seen referenced from app-controller.js so the data flow can complete.
+    if (!appController.api.ui) {
+      appController.api.ui = {
+        openLexQueryUI () {},
+        openPanel () {},
+        closePanel () {},
+        closeUI () {},
+        hasModule () { return false },
+        changeTab () {},
+        showLookupResultsUI () {},
+        isPopupVisible () { return false }
+      }
+    }
+
+    // ── Helper: kick off a lookup from the v3 search box ────────────────
+    // `api.app.newLexicalRequest` only commits store mutations — it does
+    // NOT actually issue a LexicalQuery. The real entry point is
+    // `api.lexis.lookupText(textSelector)` (the same path v2's lookup.vue
+    // uses). We construct a duck-typed TextSelector with the six fields the
+    // LOOKUP source path reads (text / languageID / model / data / location
+    // / normalizedText) — TextSelector is an internal alpheios-components
+    // class, but its surface used by the LOOKUP flow is small enough to
+    // synthesize without importing the class.
+    appController.runLookup = function (text, langCode) {
+      if (!text || !text.trim()) return
+      const lookupLanguage = this.api.settings &&
+        this.api.settings.getFeatureOptions().items.lookupLanguage
+      const code = langCode ||
+        (lookupLanguage && lookupLanguage.currentValue) ||
+        'lat'
+      // Use AppController's own LanguageModelFactory instance. The UMD
+      // alpheios-components bundle carries its own data-models copy; creating
+      // Symbols from a separately imported alpheios-data-models bundle makes
+      // typed lookup subtly diverge from v2.
+      const langDetails = this.constructor.getLanguageName(code)
+      const languageID = langDetails && langDetails.id
+      if (!languageID || !langDetails.code || langDetails.code === 'undefined') return
+      const t = text.trim()
+      const textSelector = {
+        text: t,
+        languageID,
+        data: {},
+        location: '',
+        get normalizedText () { return normalizeLookupText(this.text, langDetails.code) },
+        get languageCode () { return langDetails.code },
+        isEmpty () { return !this.text }
+      }
+      return this.api.lexis.lookupText(textSelector)
+    }
   } catch (err) {
     logger.error(`[alpheios-v3] AppController init/activate failed: ${err && err.message ? err.message : err}`)
-    appController = null // mount() will fall back to fixtures
+    appController = null // mount() will render explicit data-layer unavailable states
   }
 
   // ── Vue 3 UI mount ────────────────────────────────────────────────────
@@ -128,3 +184,28 @@ typeof BUILD_NUMBER // referenced so DefinePlugin keeps the constant alive
     window[V3_FLAG] = false
   }
 })()
+
+function normalizeLookupText (text, langCode) {
+  if (!text) return text
+  if (langCode === 'grc') {
+    return text.normalize('NFC').replace(/\u2019$/, '\u1fbd')
+  }
+  if (langCode === 'lat') {
+    return text
+      .replace(/[\u00c0\u00c1\u00c2\u00c3\u00c4\u0100\u0102]/g, 'A')
+      .replace(/[\u00c8\u00c9\u00ca\u00cb\u0112\u0114]/g, 'E')
+      .replace(/[\u00cc\u00cd\u00ce\u00cf\u012a\u012c]/g, 'I')
+      .replace(/[\u00d2\u00d3\u00d4\u00df\u00d6\u014c\u014e]/g, 'O')
+      .replace(/[\u00d9\u00da\u00db\u00dc\u016a\u016c]/g, 'U')
+      .replace(/[\u00c6\u01e2]/g, 'AE')
+      .replace(/[\u0152]/g, 'OE')
+      .replace(/[\u00e0\u00e1\u00e2\u00e3\u00e4\u0101\u0103]/g, 'a')
+      .replace(/[\u00e8\u00e9\u00ea\u00eb\u0113\u0115]/g, 'e')
+      .replace(/[\u00ec\u00ed\u00ee\u00ef\u012b\u012d\u0129]/g, 'i')
+      .replace(/[\u00f2\u00f3\u00f4\u00f5\u00f6\u014d\u014f]/g, 'o')
+      .replace(/[\u00f9\u00fa\u00fb\u00fc\u016b\u016d]/g, 'u')
+      .replace(/[\u00e6\u01e3]/g, 'ae')
+      .replace(/[\u0153]/g, 'oe')
+  }
+  return text
+}

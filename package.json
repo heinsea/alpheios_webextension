@@ -13,7 +13,7 @@
     "build-safari-dev": "npm run update-dist && npm run update-styles && webpack --config webpack.config.safari.mjs --mode development && npm run update-styles",
     "install:dev-safe": "npm install --legacy-peer-deps --ignore-scripts",
     "set-auth0": "node ./scripts/update_env.mjs",
-    "update-styles": "node ./node_modules/alpheios-node-build/dist/files.mjs replace --s=./node_modules/alpheios-core/packages/components/dist/style --t=dist/style",
+    "update-styles": "node ./node_modules/alpheios-node-build/dist/files.mjs replace --s=../alpheios_alpheios-core/packages/components/dist/style --t=dist/style",
     "update-dist": "shx rm -rf ./dist && shx mkdir ./dist && shx cp -r ./src/manifest/* ./dist && shx cp -r ./src/icons ./dist && shx cp ./src/compatibility-fixes/compatibility-fixes.js ./dist && shx cp ./src/env/env-webext-template.js ./dist/env-webext.js && shx cp ./src/env/env-safari-app-ext-template.js ./src/lib/auth/env-safari-app-ext.js && shx mkdir ./dist/support && npm run webext-polyfill-update",
     "webext-polyfill-update": "node ./node_modules/alpheios-node-build/dist/files.mjs replace --s=./node_modules/webextension-polyfill/dist --t=dist/support/webextension-polyfill",
     "lint": "eslint --fix src/**/*.js",

@@ -101,8 +101,8 @@ export default (env, argv) => {
         'alpheios-components$': path.join(
           projectRoot,
           isProd
-            ? 'node_modules/alpheios-core/packages/components/dist/alpheios-components.min.js'
-            : 'node_modules/alpheios-core/packages/components/dist/alpheios-components.js'
+            ? '../alpheios_alpheios-core/packages/components/dist/alpheios-components.min.js'
+            : '../alpheios_alpheios-core/packages/components/dist/alpheios-components.js'
         ),
         // v3 UI: pre-built ESM bundle from the fork (Vite library mode).
         // We alias both the bare specifier and the `/style.css` subpath so
