@@ -115,6 +115,8 @@
     "**/src/env"
   ],
   "dependencies": {
+    "util": "^0.12.5",
+    "vm-browserify": "^1.1.2",
     "vue": "^3.5.33",
     "webextension-polyfill": "^0.6.0"
   },

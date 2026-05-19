@@ -276,21 +276,41 @@ export default class BackgroundProcess {
   /**
    * Inject the content script into the tab. The compatibility shim is always
    * injected first; then either the legacy v2 entry (`content.js`) or the
-   * v3 entry (`content-v3.js`) — selected by the tab URL's `?alpheios=v3`
-   * query gate. The two never coexist on the same page so we don't need
-   * cross-version teardown logic. See doc/ui/REFACTOR-V3-PLAN.md.
+   * v3 entry (`content-v3.js`).
+   *
+   * Decision order:
+   *   1. URL param `?alpheios=v3`  → force v3
+   *   2. URL param `?alpheios=v2`  → force legacy
+   *   3. Storage key `useLegacyUI` → legacy when true
+   *   4. Default                   → v3
+   *
+   * The two never coexist on the same page so we don't need cross-version
+   * teardown logic. See doc/ui/REFACTOR-V3-PLAN.md.
    */
   async loadContentScript (tabId) {
-    let useV3 = false
+    let useV3 = true // default to v3
     try {
       const tab = await browser.tabs.get(tabId)
       if (tab && tab.url) {
         const u = new URL(tab.url)
-        useV3 = u.searchParams.get('alpheios') === 'v3'
+        const versionParam = u.searchParams.get('alpheios')
+        if (versionParam === 'v2') {
+          useV3 = false
+        } else if (versionParam === 'v3') {
+          useV3 = true
+        } else {
+          // No URL override — check the persistent setting.
+          try {
+            const stored = await browser.storage.local.get('useLegacyUI')
+            if (stored && stored.useLegacyUI === true) {
+              useV3 = false
+            }
+          } catch (_) { /* storage unavailable → stay with v3 */ }
+        }
       }
     } catch (e) {
       // Some tab URLs (chrome://, file:// without permission) throw;
-      // fall back to v2 silently.
+      // fall back to v3 silently.
     }
     const entryFile = useV3
       ? this.settings.contentV3ScriptFileName

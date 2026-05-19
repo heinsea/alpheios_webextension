@@ -43,13 +43,13 @@ typeof BUILD_NUMBER // referenced so DefinePlugin keeps the constant alive
     return
   }
 
-  // Query gate. background-process.js only injects this file when the URL
-  // contains ?alpheios=v3, but a manual injection (e.g. via DevTools) might
-  // bypass that path, so we re-check here.
+  // background-process.js now defaults to injecting this script (v3 is the
+  // default UI). The URL gate is removed — only a guard against the explicit
+  // legacy override (?alpheios=v2) remains, in case of manual injection.
   let mode = 'production'
   try {
     const url = new URL(window.location.href)
-    if (url.searchParams.get('alpheios') !== 'v3') {
+    if (url.searchParams.get('alpheios') === 'v2') {
       return
     }
     const m = url.searchParams.get('mode')

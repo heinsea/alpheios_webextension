@@ -74,7 +74,9 @@ export default (env, argv) => {
     resolve: {
       fallback: {
         crypto: path.resolve(projectRoot, 'node_modules/crypto-browserify'),
-        stream: path.resolve(projectRoot, 'node_modules/stream-browserify')
+        stream: path.resolve(projectRoot, 'node_modules/stream-browserify'),
+        util: path.resolve(projectRoot, 'node_modules/util/'),
+        vm: path.resolve(projectRoot, 'node_modules/vm-browserify')
       },
       alias: {
         'alpheios-components$': path.join(
