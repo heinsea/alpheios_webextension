@@ -163,6 +163,50 @@ typeof BUILD_NUMBER // referenced so DefinePlugin keeps the constant alive
       }
       return this.api.lexis.lookupText(textSelector)
     }
+
+    // ── Auto-detect language for text-selection lookups ──────────────────
+    // Text selections on a page default to the page language (usually
+    // Latin for English pages). Detect the actual script from the selected
+    // text and override the language so non-Latin words are analysed
+    // correctly even when double-clicked on an English page.
+    const SCRIPT_RANGES = [
+      { re: /[\u0370-\u03FF\u1F00-\u1FFF]/, code: 'grc' },
+      { re: /[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]/, code: 'ara' },
+      { re: /[\u1200-\u137F]/, code: 'gez' },
+      { re: /[\u0700-\u074F]/, code: 'syr' },
+      { re: /[\u2E80-\u2FDF\u3000-\u303F\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]/, code: 'zho' }
+    ]
+    function detectCode (text) {
+      if (!text) return null
+      for (const d of SCRIPT_RANGES) { if (d.re.test(text)) return d.code }
+      return null
+    }
+
+    const lexisApi = appController.api.lexis
+    const origGetSelectedText = lexisApi.getSelectedText.bind(lexisApi)
+    lexisApi.getSelectedText = function (textSelector, target) {
+      if (textSelector && textSelector.text) {
+        const code = detectCode(textSelector.text)
+        if (code) {
+          const langDetails = appController.constructor.getLanguageName(code)
+          if (langDetails && langDetails.id) {
+            const wrapped = {
+              get text () { return textSelector.text },
+              get languageID () { return langDetails.id },
+              get languageCode () { return langDetails.code },
+              get data () { return textSelector.data || {} },
+              get location () { return textSelector.location || '' },
+              get normalizedText () { return normalizeLookupText(this.text, langDetails.code) },
+              isEmpty () { return textSelector.isEmpty ? textSelector.isEmpty() : !this.text }
+            }
+            // Sync the store so the UI dropdown reflects auto-detected language
+            try { appController._store.commit('app/setSelectedLookupLang', langDetails.code) } catch (_) {}
+            return origGetSelectedText(wrapped, target)
+          }
+        }
+      }
+      return origGetSelectedText(textSelector, target)
+    }
   } catch (err) {
     logger.error(`[alpheios-v3] AppController init/activate failed: ${err && err.message ? err.message : err}`)
     appController = null // mount() will render explicit data-layer unavailable states
