@@ -281,7 +281,7 @@ export default class BackgroundProcess {
    * Decision order:
    *   1. URL param `?alpheios=v3`  → force v3
    *   2. URL param `?alpheios=v2`  → force legacy
-   *   3. Storage key `useLegacyUI` → legacy when true
+   *   3. Storage key `useClassicUI` → classic when true
    *   4. Default                   → v3
    *
    * The two never coexist on the same page so we don't need cross-version
@@ -301,8 +301,8 @@ export default class BackgroundProcess {
         } else {
           // No URL override — check the persistent setting.
           try {
-            const stored = await browser.storage.local.get('useLegacyUI')
-            if (stored && stored.useLegacyUI === true) {
+            const stored = await browser.storage.local.get('useClassicUI')
+            if (stored && stored.useClassicUI === true) {
               useV3 = false
             }
           } catch (_) { /* storage unavailable → stay with v3 */ }
