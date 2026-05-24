@@ -44,7 +44,7 @@
     "@babel/core": "^7.12.3",
     "@babel/eslint-parser": "^7.12.0",
     "@babel/preset-env": "^7.12.1",
-    "alpheios-core": "git+https://github.com/alpheios-project/alpheios-core.git",
+    "alpheios-core": "git+https://github.com/heinsea/alpheios_alpheios-core.git",
     "alpheios-node-build": "git+https://github.com/alpheios-project/node-build.git#semver:^3.5.1",
     "archiver": "^5.0.2",
     "babel-loader": "^8.1.0",

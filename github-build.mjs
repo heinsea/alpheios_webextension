@@ -40,7 +40,7 @@ function generateBuildInfo (datetime = Date.now()) {
     if (buildInfo.branch === 'qa' || buildInfo.branch === 'production') {
       console.info(`Installing alpheios-core from #${buildInfo.branch} branch`)
       execSync(
-        `npm install https://github.com/alpheios-project/alpheios-core#${buildInfo.branch} --legacy-peer-deps`,
+        `npm install https://github.com/heinsea/alpheios_alpheios-core#${buildInfo.branch} --legacy-peer-deps`,
         { stdio: 'inherit' }
       )
     }
