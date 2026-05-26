@@ -4,11 +4,11 @@ Browser extension for classical language reading tools (Chrome).
 
 > **Status**: Under active development, not yet feature-complete.
 >
-> To use it, click the plugin icon in your browser, the popup will pop up automatically. Double-click any classical word on the page you'd like to look up, and it will return the result. If you run into issues where the popup won't open, try refreshing the page. As you might know, there are still a few bugs to fix. I can't promise a timeline, but I'll do what I can in my spare time.
+> To use it, click the plugin icon in your browser, the popup will pop up automatically. Double-click any classical word on the page you'd like to look up, and it will return the result. If you run into issues where the popup won't open, try refreshing the page.
+>  
+> The 'Usage' and 'Tree' sections in the Drawer will be hidden. As for the 'Grammar' section, it may need to be rendered with different CSS?
 >
-> There's still a lot of work to be done, and it will take time... The 'Usage' and 'Tree' sections in the Drawer will be hidden. As for the 'Grammar' section, it may need to be rendered with different CSS?
->
-> Account login is optional, because the sync feature isn't available yet. I only used my own account to test that Auth0 login works for now. So if you uninstall the plugin locally, be sure to export your saved words from the 'Word List' in time.
+> Account login is optional, because the sync feature isn't available yet. So if you uninstall the plugin locally, be sure to export your saved words from the 'Word List' in time.
 
 
 ## Screenshots
