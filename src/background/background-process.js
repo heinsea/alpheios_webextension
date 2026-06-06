@@ -723,6 +723,43 @@ export default class BackgroundProcess {
   }
 
   /**
+   * Whether a URL is an Allen & Greenough grammar page that the grammar reader
+   * should modernize. Kept narrow (matches the manifest content_script and the
+   * reader's own path gate); extend the path set here to cover other grammars
+   * (e.g. `/bennett/`, `/smyth/`) once the reader handles their markup.
+   * @param {string} url
+   * @return {boolean}
+   */
+  static isGrammarReaderUrl (url) {
+    if (!url) return false
+    try {
+      const u = new URL(url)
+      return u.hostname === 'grammars.alpheios.net' && u.pathname.startsWith('/allen-greenough/')
+    } catch (e) {
+      return false
+    }
+  }
+
+  /**
+   * Inject the grammar reader CSS + JS into a single frame. Used for the
+   * embedded cross-origin grammar iframe, which the declarative content script
+   * does not reliably reach. The reader script is idempotent, so this is safe
+   * even when the declarative injection also fired in the same frame.
+   * @param {number} tabId
+   * @param {number} frameId
+   */
+  async injectGrammarReader (tabId, frameId) {
+    const target = { tabId, frameIds: [frameId] }
+    try {
+      await browser.scripting.insertCSS({ target, files: [this.settings.grammarReaderCssFileName] })
+      await browser.scripting.executeScript({ target, files: [this.settings.grammarReaderScriptFileName] })
+    } catch (e) {
+      // Restricted frame, navigation race, or the frame is already gone.
+      // Declarative injection may still cover top-level visits; ignore quietly.
+    }
+  }
+
+  /**
    * Called when a page is loaded.
    * Use this to listen on webNavigation.onCompleted rather than tabs.onUpdated
    * because you can't tell from the tabs.onUpdated event whether it's the main
@@ -739,6 +776,15 @@ export default class BackgroundProcess {
     if (details.url && details.url.match(/^blob:/)) {
       return
     }
+
+    // Grammar reader: modernize the Allen & Greenough grammar pages. This runs
+    // for ANY frame (top-level tab OR the cross-origin iframe embedded in the
+    // v3 Resources panel) independently of Alpheios tab tracking, because the
+    // declarative content script does not reliably reach that nested iframe.
+    if (BackgroundProcess.isGrammarReaderUrl(details.url)) {
+      this.injectGrammarReader(details.tabId, details.frameId)
+    }
+
     const finalWindowId = this.defineCurrentWindowIdForActivation(details)
     const tmpTabUniqueId = Tab.createUniqueId(details.tabId, finalWindowId)
 
@@ -953,6 +999,13 @@ BackgroundProcess.defaults = {
   // `?alpheios=v3` URL query in `loadContentScript`. See
   // doc/ui/REFACTOR-V3-PLAN.md.
   contentV3ScriptFileName: 'content-v3.js',
+  // Grammar reader (Allen & Greenough modernization). Injected programmatically
+  // into the grammar frame — including the cross-origin iframe embedded in the
+  // v3 Resources panel — from `navigationCompletedListener`. The manifest also
+  // declares it as a content script for top-level direct visits; the script is
+  // idempotent so double-delivery into one frame is a no-op.
+  grammarReaderScriptFileName: 'grammar-reader.js',
+  grammarReaderCssFileName: 'styles/grammar-reader.css',
   browserPolyfillName: 'support/webextension-polyfill/browser-polyfill.min.js',
   experienceStorageCheckInterval: 10000,
   experienceStorageThreshold: 3,

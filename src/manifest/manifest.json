@@ -32,6 +32,17 @@
   "background": {
     "service_worker": "background.js"
   },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://grammars.alpheios.net/allen-greenough/*"
+      ],
+      "js": ["grammar-reader.js"],
+      "css": ["styles/grammar-reader.css"],
+      "run_at": "document_end",
+      "all_frames": true
+    }
+  ],
   "browser_specific_settings": {
     "gecko": {
       "id": "alpheios@alpheios.net",
