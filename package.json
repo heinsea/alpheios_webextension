@@ -25,7 +25,7 @@
     "version-set-major": "npm version major",
     "version-set-minor": "npm version minor",
     "version-set-patch": "npm version patch",
-    "dist": "node ./node_modules/alpheios-node-build/dist/files.mjs copy --s=/dist --t=dist-temp  --clean && node ./node_modules/alpheios-node-build/dist/zip.mjs --s=/dist-temp --t=dist-zip --f=dist.zip && node ./node_modules/alpheios-node-build/dist/files.mjs clean --t=dist-temp",
+    "dist": "node ./node_modules/alpheios-node-build/dist/files.mjs copy --s=/dist --t=dist-temp  --clean && node ./scripts/strip-sourcemaps.mjs dist-temp && node ./node_modules/alpheios-node-build/dist/zip.mjs --s=/dist-temp --t=dist-zip --f=dist.zip && node ./node_modules/alpheios-node-build/dist/files.mjs clean --t=dist-temp",
     "github-build": "node ./github-build.mjs"
   },
   "repository": {
