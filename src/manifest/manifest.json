@@ -35,7 +35,8 @@
   "content_scripts": [
     {
       "matches": [
-        "https://grammars.alpheios.net/allen-greenough/*"
+        "https://grammars.alpheios.net/allen-greenough/*",
+        "https://grammars.alpheios.net/smyth/xhtml/*"
       ],
       "js": ["grammar-reader.js"],
       "css": ["styles/grammar-reader.css"],

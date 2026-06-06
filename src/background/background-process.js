@@ -723,10 +723,11 @@ export default class BackgroundProcess {
   }
 
   /**
-   * Whether a URL is an Allen & Greenough grammar page that the grammar reader
-   * should modernize. Kept narrow (matches the manifest content_script and the
-   * reader's own path gate); extend the path set here to cover other grammars
-   * (e.g. `/bennett/`, `/smyth/`) once the reader handles their markup.
+   * Whether a URL is a grammar page that the grammar reader should modernize.
+   * Kept in sync with the manifest content_script matches and the reader's own
+   * per-book path gate (components-v3 grammar-reader.js); extend the path set
+   * here to cover more grammars (e.g. `/bennett/`) once the reader handles
+   * their markup.
    * @param {string} url
    * @return {boolean}
    */
@@ -734,7 +735,9 @@ export default class BackgroundProcess {
     if (!url) return false
     try {
       const u = new URL(url)
-      return u.hostname === 'grammars.alpheios.net' && u.pathname.startsWith('/allen-greenough/')
+      if (u.hostname !== 'grammars.alpheios.net') return false
+      return u.pathname.startsWith('/allen-greenough/') ||
+        u.pathname.startsWith('/smyth/xhtml/')
     } catch (e) {
       return false
     }
