@@ -67,7 +67,8 @@ export default (env, argv) => {
       // v3 (Scholarly Glass) parallel content script. Selected at injection
       // time by `loadContentScript` in background-process.js based on the
       // tab URL's `?alpheios=v3` query. See doc/ui/REFACTOR-V3-PLAN.md.
-      'content-v3': './content/content-v3.js'
+      'content-v3': './content/content-v3.js',
+      'grammar-reader': './content/grammar-reader.js'
     },
     output: {
       path: path.join(projectRoot, 'dist'),
@@ -110,6 +111,10 @@ export default (env, argv) => {
         'alpheios-components-v3$': path.resolve(
           projectRoot,
           '../alpheios_alpheios-core/packages/components-v3/dist/components-v3.js'
+        ),
+        'alpheios-components-v3/grammar-reader$': path.resolve(
+          projectRoot,
+          '../alpheios_alpheios-core/packages/components-v3/src/grammar-reader/grammar-reader.js'
         ),
         'alpheios-components-v3/style.css$': path.resolve(
           projectRoot,
