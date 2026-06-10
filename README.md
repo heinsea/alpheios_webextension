@@ -6,9 +6,7 @@ Browser extension for classical language reading tools (Chrome).
 >
 > To use it, click the plugin icon in your browser, the popup will pop up automatically. Double-click any classical word on the page you'd like to look up, and it will return the result. If you run into issues where the popup won't open, try refreshing the page.
 >  
-> The 'Usage' and 'Tree' sections in the Drawer will be hidden. As for the 'Grammar' section, it may need to be rendered with different CSS?
->
-> Account login is optional, because the sync feature isn't available yet. So if you uninstall the plugin locally, be sure to export your saved words from the 'Word List' in time.
+> if you uninstall the plugin locally, be sure to export your saved words from the 'Word List' in time.
 
 
 ## Screenshots
@@ -26,6 +24,10 @@ Look it up in the drawer
 <img src="doc/img/test04.png" alt="Drawer" width="80%">
 
 <img src="doc/img/test05.png" alt="Drawer" width="80%">
+
+<img src="doc/img/test06.png" alt="Drawer" width="80%">
+
+<img src="doc/img/test07.png" alt="Drawer" width="80%">
 
 ## Build
 
